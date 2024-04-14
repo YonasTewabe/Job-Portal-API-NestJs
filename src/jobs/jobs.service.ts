@@ -1,26 +1,49 @@
-import { Injectable } from '@nestjs/common';
+/* eslint-disable prettier/prettier */
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Job } from './entities/job.entity';
 
 @Injectable()
 export class JobsService {
-  create(createJobDto: CreateJobDto) {
-    return 'This action adds a new job';
+  constructor(
+    @InjectRepository(Job)
+    private readonly jobsRepository: Repository<Job>){
+
+  }
+  async create(createJobDto: CreateJobDto) {
+    const job = this.jobsRepository.create(createJobDto)
+    
+    return await this.jobsRepository.save(job);
   }
 
-  findAll() {
-    return `This action returns all jobs`;
+  async findAll() {
+    return await this.jobsRepository.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} job`;
+  async findOne(id: number) {
+    return await this.jobsRepository.findOne({
+      where: { id }
+    });
   }
 
-  update(id: number, updateJobDto: UpdateJobDto) {
-    return `This action updates a #${id} job`;
+  async update(id: number, updateJobDto: UpdateJobDto) {
+    const job = await this.findOne(id);
+    if(!job){
+      throw new NotFoundException()
+    }
+    Object.assign(job, updateJobDto)
+
+    return await this.jobsRepository.save(job)
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} job`;
+  async remove(id: number) {
+    const job = await this.findOne(id);
+    if(!job){
+      throw new NotFoundException()
+    }
+    return await this.jobsRepository.remove(job)
   }
 }
