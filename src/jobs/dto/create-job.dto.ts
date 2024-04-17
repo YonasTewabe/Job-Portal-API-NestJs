@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 export class CreateJobDto {
     type: string;
     title: string;

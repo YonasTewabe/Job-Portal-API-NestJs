@@ -26,7 +26,7 @@ export class Job {
   @Column({ type: 'text' })
   companyName: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'text'})
   companyDescription: string;
 
   @Column({ type: 'text' })
