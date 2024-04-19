@@ -6,6 +6,7 @@ import { JobsModule } from './jobs/jobs.module';
 import { ConfigModule } from '@nestjs/config';
 import {config} from './orm.config'
 import { UserModule } from './user/user.module';
+import { CredentialModule } from './credential/credential.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { UserModule } from './user/user.module';
     TypeOrmModule.forRoot(config),
     JobsModule,
     UserModule,
+    CredentialModule,
   ],
   controllers: [AppController],
   providers: [AppService],
