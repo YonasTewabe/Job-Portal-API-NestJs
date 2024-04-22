@@ -5,8 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { JobsModule } from './jobs/jobs.module';
 import { ConfigModule } from '@nestjs/config';
 import {config} from './orm.config'
-import { UserModule } from './user/user.module';
-import { CredentialModule } from './credential/credential.module';
+import { ProfileModule } from './profile/profile.module';
+import { ApplicationModule } from './application/application.module';
 
 @Module({
   imports: [
@@ -15,8 +15,8 @@ import { CredentialModule } from './credential/credential.module';
     }),
     TypeOrmModule.forRoot(config),
     JobsModule,
-    UserModule,
-    CredentialModule,
+    ProfileModule,
+    ApplicationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

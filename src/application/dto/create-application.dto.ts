@@ -1,0 +1,8 @@
+export class CreateApplicationDto {
+ companyname: string;
+ jobtitle: string;
+ applicationdate: Date;
+ fullname: string;
+ status: string;
+
+}
