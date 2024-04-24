@@ -22,13 +22,13 @@ export class JobsService {
     return await this.jobsRepository.find();
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     return await this.jobsRepository.findOne({
       where: { id }
     });
   }
 
-  async update(id: number, updateJobDto: UpdateJobDto) {
+  async update(id: string, updateJobDto: UpdateJobDto) {
     const job = await this.findOne(id);
     if(!job){
       throw new NotFoundException()
@@ -38,7 +38,7 @@ export class JobsService {
     return await this.jobsRepository.save(job)
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const job = await this.findOne(id);
     if(!job){
       throw new NotFoundException()
