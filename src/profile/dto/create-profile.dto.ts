@@ -7,7 +7,7 @@ export class CreateProfileDto {
     experience: string;
     contactEmail: string;
     contactPhone: string;
-
+    cv: string;
     email: string;
     password: string;
     role: string;

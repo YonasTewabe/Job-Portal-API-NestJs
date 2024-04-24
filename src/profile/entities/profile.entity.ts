@@ -1,10 +1,11 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import {v4 as uuidv4} from "uuid";
 
 
 @Entity({name: 'profile'})
 export class Profile {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn('uuid')
+    id: uuidv4;
 
     @Column({ type: 'text', nullable: true })
     fullname: string
@@ -24,13 +25,13 @@ export class Profile {
     @Column({ type: 'text', nullable: true })
     experience: string
     
-    @Column({ type: 'text', nullable: true })
+    @Column({ type: 'text', unique: true, nullable: true })
     contactEmail: string
     
     @Column({ type: 'varchar', nullable: true })
     contactPhone: string
     
-    @Column({ type: 'varchar', nullable: false })
+    @Column({ type: 'varchar', unique: true, nullable: false })
     email: string;
 
     @Column({ type: 'varchar', nullable: false })
@@ -38,4 +39,7 @@ export class Profile {
 
     @Column({ type: 'text', nullable: true})
     role: string;
+
+    @Column({ type: 'text', nullable: true})
+    cv: string;
 }

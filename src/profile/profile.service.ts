@@ -11,9 +11,9 @@ export class ProfileService {
     @InjectRepository(Profile)
     private readonly profileRepository: Repository<Profile>){}
   
-  async create(createProfileDto: CreateProfileDto) {
-    const profile = this.profileRepository.create(createProfileDto)
-    return await this.profileRepository.save(profile)
+   async create(createProfileDto: CreateProfileDto) {
+    const profile = this.profileRepository.create(createProfileDto);
+    return await this.profileRepository.save(profile);
   }
   async findOneBy(condition: any):  Promise<Profile>{
     return this.profileRepository.findOneBy(condition)
@@ -22,13 +22,13 @@ export class ProfileService {
     return await this.profileRepository.find();
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     return await this.profileRepository.findOne({
       where: { id }
     });
   }
 
-  async update(id: number, updateProfileDto: UpdateProfileDto) {
+  async update(id: string, updateProfileDto: UpdateProfileDto) {
     const profile = await this.findOne(id);
     if(!profile){
       throw new NotFoundException()
@@ -38,11 +38,11 @@ export class ProfileService {
     return await this.profileRepository.save(profile)
   }
 
-  async remove(id: number) {
-    const user = await this.findOne(id);
-    if(!user){
+  async remove(id: string) {
+    const profile = await this.findOne(id);
+    if(!profile){
       throw new NotFoundException()
     }
-    return await this.profileRepository.remove(user)
+    return await this.profileRepository.remove(profile) 
   }
 }
