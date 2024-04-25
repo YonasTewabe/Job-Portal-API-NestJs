@@ -16,6 +16,9 @@ export class Application {
  @Column({type: 'text'})
  fullname: string;
 
+ @Column({type: 'varchar'})
+ contactemail: string;
+
  @Column({type: 'date'})
  applicationdate: Date;
 

@@ -3,6 +3,7 @@ export class CreateApplicationDto {
  jobtitle: string;
  applicationdate: Date;
  fullname: string;
+ contactemail: string;
  status: string;
 
 }

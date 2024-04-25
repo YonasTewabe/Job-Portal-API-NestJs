@@ -5,7 +5,7 @@ export const config: TypeOrmModuleOptions = {
   password: '1234',
   port: 5432,
   host: '127.0.0.1',
-  database: 'capstone',
+  database: 'capstoneProject',
   synchronize: true,
   entities: ['dist/**/*.entity{.ts,.js}'],
 };
