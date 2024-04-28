@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Req, Res, UnauthorizedException, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, Res, UnauthorizedException, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProfileService } from './profile.service';
 import { CreateProfileDto } from './dto/create-profile.dto';
@@ -11,6 +11,7 @@ import { createReadStream, createWriteStream, mkdir } from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 import * as multer from 'multer';
+import { AuthGuard } from 'src/guards/auth.guard';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const createReadStreamAsync = promisify(createReadStream);
@@ -30,8 +31,13 @@ export class ProfileController {
     @Body('password') password: string,
     @Body('role') role: string,
   ) {
+    const existingProfile = await this.profileService.findOneBy({ email });
+    if (existingProfile) {
+      throw new ConflictException('Email already exists');
+    }
+  
     const hashedPassword = await bcrypt.hash(password, 12);
-
+  
     const profile = await this.profileService.create({
       role,
       email,
@@ -42,62 +48,54 @@ export class ProfileController {
       degree: '',
       university: '',
       experience: '',
-      contactEmail: '',
       contactPhone: '',
-      cv: ''
+      cv: '',
+      dataCompleted: false
     });
-
+  
     return profile;
   }
 
   @Post('login')
-async login(
-  @Body('email') email: string,
-  @Body('password') password: string,
-  @Res({ passthrough: true }) response: ExpressResponse,
-) {
-  const profile = await this.profileService.findOneBy({ email });
-  if (!profile) {
-    throw new BadRequestException('Invalid credentials');
+  async login(
+    @Body('email') email: string,
+    @Body('password') password: string,
+    @Res({ passthrough: true }) response: ExpressResponse,
+  ) {
+    const profile = await this.profileService.findOneBy({ email });
+    if (!profile) {
+      throw new BadRequestException('Invalid credentials');
+    }
+    if (!await bcrypt.compare(password, profile.password)) {
+      throw new BadRequestException('Invalid credentials');
+    }
+    const jwt = await this.jwtService.signAsync({ id: profile.id });
+
+    response.cookie('jwt', jwt, { httpOnly: true });
+
+    return {
+      message: 'Success',
+      profileId: profile.id,
+      role: profile.role,
+      completed: profile.dataCompleted,
+      jwt: jwt,
+    };
   }
-  if (!await bcrypt.compare(password, profile.password)) {
-    throw new BadRequestException('Invalid credentials');
-  }
-  const jwt = await this.jwtService.signAsync({ id: profile.id });
-
-  response.cookie('jwt', jwt, { httpOnly: true });
-
-  return {
-    message: 'Success',
-    profileId: profile.id,
-    jwt: jwt,
-  };
-}
-
 
   @Get('pdf/:filename')
-  async getPdf(@Param('filename') filename: string, @Res() response: ExpressResponse, @Req() request: ExpressRequest) {
-    try {
-      const cookie = request.cookies['jwt'];
-      const data = await this.jwtService.verifyAsync(cookie);
-
-      if (!data) {
-        throw new UnauthorizedException();
-      }
-
-      const filePath = join(__dirname, '..', 'uploads', filename);
+  @UseGuards(AuthGuard)
+  getPdf(@Param('filename') filename: string, @Res() response: ExpressResponse) {
+    const filePath = join(__dirname, `../uploads/${filename}`);
   
-      response.setHeader('Content-Type', 'application/pdf');
-      response.setHeader('Content-Disposition', `inline; filename=${filename}`);
+    response.setHeader('Content-Type', 'application/pdf');
+    response.setHeader('Content-Disposition', `inline; filename=${filename}`);
   
-      const stream = createReadStream(filePath);
-      stream.pipe(response);
-    } catch (e) {
-      throw new UnauthorizedException();
-    }
+    createReadStream(filePath).pipe(response);
   }
+  
 
   @Get('profile')
+  @UseGuards(AuthGuard)
   async profile(@Req() request: ExpressRequest) {
     try {
       const cookie = request.cookies['jwt'];
@@ -122,13 +120,17 @@ async login(
   }
   
   @Post('logout')
+  @HttpCode(200) // Ensure the response code is 200 OK
   async logout(@Res({ passthrough: true }) response: ExpressResponse) {
     response.clearCookie('jwt');
+    response.setHeader('Cache-Control', 'no-store'); // Prevent caching
     return { message: 'Logout successful' };
   }
   
+  
 
   @Post('upload')
+  @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@UploadedFile() file, @Body() createProfileDto: CreateProfileDto) {
     if (!file) {
@@ -154,6 +156,7 @@ async login(
   }
 
   @Post('create')
+  @UseGuards(AuthGuard)
   async createProfile(@Body() createProfileDto: CreateProfileDto) {
     const { password, ...rest } = createProfileDto;
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -163,16 +166,19 @@ async login(
   }
 
   @Get()
+  @UseGuards(AuthGuard)
   findAll() {
     return this.profileService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(AuthGuard)
   findOne(@Param('id') id: string) {
     return this.profileService.findOne(id);
   }
 
   @Patch(':id')
+  @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   async update(
     @Param('id') id: string,
@@ -194,12 +200,29 @@ async login(
       profileData = { ...updateProfileDto, cv: file.originalname };
     }
   
+    // Check if all specified fields are not empty
+    if (
+      profileData.fullname &&
+      profileData.age &&
+      profileData.sex &&
+      profileData.degree &&
+      profileData.university &&
+      profileData.experience &&
+      profileData.contactPhone &&
+      profileData.cv
+    ) {
+      profileData.dataCompleted = true;
+    }
+  
     return this.profileService.update(id, profileData);
   }
   
+  
 
   @Delete(':id')
+  @UseGuards(AuthGuard)
   remove(@Param('id') id: string) {
     return this.profileService.remove(id);
   }
+  
 }

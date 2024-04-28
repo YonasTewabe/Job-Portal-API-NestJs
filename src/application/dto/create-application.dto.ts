@@ -5,5 +5,7 @@ export class CreateApplicationDto {
  fullname: string;
  contactemail: string;
  status: string;
+ userid: string;
+ jobid: string;
 
 }

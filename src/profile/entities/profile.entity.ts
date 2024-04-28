@@ -24,9 +24,7 @@ export class Profile {
     
     @Column({ type: 'text', nullable: true })
     experience: string
-    
-    @Column({ type: 'text', unique: true, nullable: true })
-    contactEmail: string
+
     
     @Column({ type: 'varchar', nullable: true })
     contactPhone: string
@@ -42,4 +40,7 @@ export class Profile {
 
     @Column({ type: 'text', nullable: true})
     cv: string;
+
+    @Column({ type: 'boolean', nullable: true, default: false})
+    dataCompleted : boolean;
 }
