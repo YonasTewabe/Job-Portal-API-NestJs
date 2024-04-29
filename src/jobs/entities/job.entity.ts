@@ -35,7 +35,7 @@ export class Job {
   contactEmail: string;
 
   @Column({ type: 'varchar' })
-  contactPhone: number;
+  companyPhone: number;
 
   @Column({ type: 'date' })
   deadline: Date;

@@ -1,22 +1,33 @@
-import { BadRequestException, Body, ConflictException, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, Res, UnauthorizedException, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { 
+  BadRequestException, 
+  Body, 
+  ConflictException, 
+  Controller, 
+  Delete, 
+  Get, 
+  HttpCode, 
+  Param, 
+  Patch, 
+  Post, 
+  Req, 
+  Res, 
+  UnauthorizedException, 
+  UploadedFile, 
+  UseGuards, 
+  UseInterceptors 
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProfileService } from './profile.service';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import * as bcrypt from 'bcrypt';
-import { JwtService } from "@nestjs/jwt";
+import { JwtService } from '@nestjs/jwt';
 import { Response as ExpressResponse } from 'express';
 import { Request as ExpressRequest } from 'express';
-import { createReadStream, createWriteStream, mkdir } from 'fs';
+import { createReadStream, createWriteStream } from 'fs';
 import { join } from 'path';
-import { promisify } from 'util';
 import * as multer from 'multer';
 import { AuthGuard } from 'src/guards/auth.guard';
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const createReadStreamAsync = promisify(createReadStream);
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const mkdirAsync = promisify(mkdir);
 
 @Controller('profile')
 export class ProfileController {
@@ -27,30 +38,20 @@ export class ProfileController {
 
   @Post('signup')
   async register(
-    @Body('email') email: string,
-    @Body('password') password: string,
-    @Body('role') role: string,
+    @Body() createProfileDto: CreateProfileDto,
   ) {
-    const existingProfile = await this.profileService.findOneBy({ email });
+    const existingProfile = await this.profileService.findOneBy({ email: createProfileDto.email });
     if (existingProfile) {
       throw new ConflictException('Email already exists');
     }
   
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(createProfileDto.password, 12);
   
     const profile = await this.profileService.create({
-      role,
-      email,
+      ...createProfileDto,
       password: hashedPassword,
-      fullname: '',
-      age: '',
-      sex: '',
-      degree: '',
-      university: '',
-      experience: '',
-      contactPhone: '',
-      cv: '',
-      dataCompleted: false
+      hrdataCompleted: false,
+      userdataCompleted: false,
     });
   
     return profile;
@@ -63,10 +64,7 @@ export class ProfileController {
     @Res({ passthrough: true }) response: ExpressResponse,
   ) {
     const profile = await this.profileService.findOneBy({ email });
-    if (!profile) {
-      throw new BadRequestException('Invalid credentials');
-    }
-    if (!await bcrypt.compare(password, profile.password)) {
+    if (!profile || !await bcrypt.compare(password, profile.password)) {
       throw new BadRequestException('Invalid credentials');
     }
     const jwt = await this.jwtService.signAsync({ id: profile.id });
@@ -77,7 +75,8 @@ export class ProfileController {
       message: 'Success',
       profileId: profile.id,
       role: profile.role,
-      completed: profile.dataCompleted,
+      usercompleted: profile.userdataCompleted,
+      hrcompleted: profile.hrdataCompleted,
       jwt: jwt,
     };
   }
@@ -202,16 +201,26 @@ export class ProfileController {
   
     // Check if all specified fields are not empty
     if (
+      profileData && 
       profileData.fullname &&
       profileData.age &&
       profileData.sex &&
       profileData.degree &&
       profileData.university &&
       profileData.experience &&
-      profileData.contactPhone &&
+      profileData.userPhone &&
       profileData.cv
     ) {
-      profileData.dataCompleted = true;
+      profileData.userdataCompleted = true;
+    }   
+     if (
+      profileData && 
+      profileData.companyname &&
+      profileData.companydescription &&
+      profileData.contactemail &&
+      profileData.companyPhone 
+    ) {
+      profileData.hrdataCompleted = true;
     }
   
     return this.profileService.update(id, profileData);

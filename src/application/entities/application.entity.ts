@@ -35,11 +35,12 @@ export class Application {
  contactemail: string;
 
  @Column({type: 'varchar'})
- contactphone: string;
+ userphone: string;
 
  @Column({type: 'date'})
  applicationdate: Date;
 
  @Column({type: 'text'})
  status: string;
+
 }

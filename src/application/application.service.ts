@@ -40,6 +40,12 @@ export class ApplicationService {
     });
   }
 
+  async findByStatus(status: string){
+    return await this.applicationRepository.count({
+      where: {status}
+    });
+  }
+
   async update(id: string, updateApplicationDto: UpdateApplicationDto) {
     const application = await this.findOne(id);
     if (!application) {

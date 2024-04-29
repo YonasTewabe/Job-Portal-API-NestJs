@@ -31,6 +31,11 @@ export class ApplicationController {
   async findOne(@Param('id') id: string) {
     return this.applicationService.findOne(id);
   }
+  
+  @Get('status/:status')
+  findByStatus(@Param('status') status: string){
+  return this.applicationService.findByStatus(status);
+  }
 
   @Patch(':id')
   async update(@Param('id') id: string, @Body() updateApplicationDto: UpdateApplicationDto) {
