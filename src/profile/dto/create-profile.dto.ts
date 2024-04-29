@@ -5,10 +5,16 @@ export class CreateProfileDto {
     degree: string;
     university: string;
     experience: string;
-    contactPhone: string;
+    userPhone: string;
     cv: string;
     email: string;
     password: string;
     role: string;
-    dataCompleted: boolean
+    companyname: string;
+    companydescription: string;
+    contactemail: string;
+    companyPhone: string;
+    userdataCompleted: boolean
+    hrdataCompleted: boolean
+
 }

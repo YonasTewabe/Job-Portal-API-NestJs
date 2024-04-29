@@ -8,6 +8,6 @@ export class CreateJobDto {
     companyName: string;
     companyDescription: string;
     contactEmail: string;
-    contactPhone: number;
+    companyPhone: number;
     deadline: Date;
 }

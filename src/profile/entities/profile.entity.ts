@@ -27,7 +27,7 @@ export class Profile {
 
     
     @Column({ type: 'varchar', nullable: true })
-    contactPhone: string
+    userPhone: string
     
     @Column({ type: 'varchar', unique: true, nullable: false })
     email: string;
@@ -42,5 +42,20 @@ export class Profile {
     cv: string;
 
     @Column({ type: 'boolean', nullable: true, default: false})
-    dataCompleted : boolean;
+    userdataCompleted : boolean;
+
+    @Column({type: 'text', nullable: true})
+    companyname: string;
+
+    @Column({ type: 'text', nullable: true})
+    companydescription: string;
+
+    @Column({ type: 'varchar', unique: true, nullable: true })
+    contactemail: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    companyPhone: string;
+
+    @Column({ type: 'boolean', nullable: true, default: false})
+    hrdataCompleted : boolean;
 }
