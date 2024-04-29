@@ -8,7 +8,6 @@ export class AuthGuard implements CanActivate {
   canActivate(
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
-    console.log('called inside guard')
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const request = context.switchToHttp().getRequest<Request>()
     const authorizationHeader = request.headers['authorization'];
