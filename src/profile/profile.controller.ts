@@ -122,7 +122,7 @@ export class ProfileController {
   @HttpCode(200) // Ensure the response code is 200 OK
   async logout(@Res({ passthrough: true }) response: ExpressResponse) {
     response.clearCookie('jwt');
-    response.setHeader('Cache-Control', 'no-store'); // Prevent caching
+    response.setHeader('Cache-Control', 'no-store');
     return { message: 'Logout successful' };
   }
   

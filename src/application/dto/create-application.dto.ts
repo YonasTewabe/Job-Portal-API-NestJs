@@ -7,5 +7,6 @@ export class CreateApplicationDto {
  status: string;
  userid: string;
  jobid: string;
+ cv: string;
 
 }

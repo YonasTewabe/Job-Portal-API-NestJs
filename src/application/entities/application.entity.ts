@@ -43,4 +43,7 @@ export class Application {
  @Column({type: 'text'})
  status: string;
 
+ @Column({type: 'text'})
+ cv: string;
+
 }

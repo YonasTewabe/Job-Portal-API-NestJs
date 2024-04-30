@@ -10,4 +10,5 @@ export class CreateJobDto {
     contactEmail: string;
     companyPhone: number;
     deadline: Date;
+    userId: string;
 }

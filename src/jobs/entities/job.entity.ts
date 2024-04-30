@@ -39,4 +39,7 @@ export class Job {
 
   @Column({ type: 'date' })
   deadline: Date;
+
+  @Column({type: 'text'})
+  userId: string;
 }
