@@ -4,6 +4,8 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { Profile } from './entities/profile.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { join } from 'path';
+import { unlink } from 'fs';
 
 @Injectable()
 export class ProfileService {
@@ -26,6 +28,12 @@ export class ProfileService {
     return await this.profileRepository.findOne({
       where: { id }
     });
+  } 
+
+  async updateByEmail(email: string) {
+    return await this.profileRepository.findOne({
+      where: { email }
+    });
   }
 
   async update(id: string, updateProfileDto: UpdateProfileDto) {
@@ -36,13 +44,33 @@ export class ProfileService {
     Object.assign(profile, updateProfileDto)
 
     return await this.profileRepository.save(profile)
-  }
-
-  async remove(id: string) {
-    const profile = await this.findOne(id);
+  }  
+  
+  async change(email: string, updateProfileDto: UpdateProfileDto) {
+    const profile = await this.updateByEmail(email);
     if(!profile){
       throw new NotFoundException()
     }
-    return await this.profileRepository.remove(profile) 
+    Object.assign(profile, updateProfileDto)
+
+    return await this.profileRepository.save(profile)
+  }
+
+  async remove(id: string): Promise<void> {
+    const profile = await this.findOne(id);
+    if (!profile) {
+      throw new NotFoundException('Profile not found');
+    }
+
+    const filePath = join(__dirname, '..', './uploads/', profile.cv);
+    unlink(filePath, (err) => {
+      if (err) {
+        console.error('Error deleting file:', err);
+      } else {
+        console.log('File deleted successfully');
+      }
+    });
+
+    await this.profileRepository.remove(profile);
   }
 }

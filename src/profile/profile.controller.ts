@@ -174,7 +174,20 @@ export class ProfileController {
   @UseGuards(AuthGuard)
   findOne(@Param('id') id: string) {
     return this.profileService.findOne(id);
+  }  
+  
+  @Patch('email/:email')
+  async change(
+    @Param('email') email: string,
+    @Body() updateProfileDto: UpdateProfileDto
+  ) {
+    if (updateProfileDto.password) {
+      updateProfileDto.password = await bcrypt.hash(updateProfileDto.password, 12);
+    }
+    return this.profileService.change(email, updateProfileDto); // Pass both email and updateProfileDto
   }
+
+  
 
   @Patch(':id')
   @UseGuards(AuthGuard)
@@ -231,6 +244,7 @@ export class ProfileController {
   @Delete(':id')
   @UseGuards(AuthGuard)
   remove(@Param('id') id: string) {
+    
     return this.profileService.remove(id);
   }
   
