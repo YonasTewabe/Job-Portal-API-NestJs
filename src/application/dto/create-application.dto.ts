@@ -8,6 +8,7 @@ export class CreateApplicationDto {
  userid: string;
  jobid: string;
  cv: string;
- interviewdate: Date;
+ interviewDate: Date;
+ interviewLocation: string;
 
 }

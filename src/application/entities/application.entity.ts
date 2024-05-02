@@ -47,6 +47,9 @@ export class Application {
  cv: string;
 
  @Column({type: 'date', nullable: true})
- interviewdate: Date;
+ interviewDate: Date;
+
+ @Column({type: 'text', nullable: true})
+ interviewLocation: string;
 
 }
