@@ -14,7 +14,7 @@ async function bootstrap() {
     credentials: true
   })
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
-  const port = configService.get('PORT');
+  const port = configService.get('PORT') || 5000;
   await app.listen(port);
 }
 bootstrap();
