@@ -1,5 +1,3 @@
-// streamable-file.ts
-
 import { Readable } from 'stream';
 
 export class StreamableFile {
