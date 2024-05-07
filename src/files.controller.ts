@@ -8,11 +8,7 @@ export class FilesController{
     @UseInterceptors(FileInterceptor('file'))
     uploadFile(@UploadedFile() file) {
         if(file) {
-            
-            console.log('file uploaded', file)
             return {message: 'File Uploaded'}
-           
-            
         }
         else if(Error) {
             console.log(Error)
