@@ -52,6 +52,7 @@ export class ProfileController {
       password: hashedPassword,
       hrdataCompleted: false,
       userdataCompleted: false,
+      hrStatus: true
     });
   
     return profile;
@@ -67,7 +68,10 @@ export class ProfileController {
     if (!profile || !await bcrypt.compare(password, profile.password)) {
       throw new BadRequestException('Invalid credentials');
     }
-    const jwt = await this.jwtService.signAsync({ id: profile.id });
+
+    const expiresIn = 3 * 60 * 60;
+
+    const jwt = await this.jwtService.signAsync({ id: profile.id }, {expiresIn});
 
     response.cookie('jwt', jwt, { httpOnly: true });
 
@@ -77,10 +81,13 @@ export class ProfileController {
       role: profile.role,
       usercompleted: profile.userdataCompleted,
       hrcompleted: profile.hrdataCompleted,
+      hrStatus: profile.hrStatus,
       jwt: jwt,
     };
   }
 
+
+    //Return cv
   @Get('pdf/:filename')
   @UseGuards(AuthGuard)
   getPdf(@Param('filename') filename: string, @Res() response: ExpressResponse) {
@@ -127,7 +134,7 @@ export class ProfileController {
   }
   
   
-
+  //Posting CV
   @Post('upload')
   @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('file'))
@@ -164,7 +171,7 @@ export class ProfileController {
     return profile;
   }
 
-  @Get()
+  @Get('all')
   @UseGuards(AuthGuard)
   findAll() {
     return this.profileService.findAll();
@@ -176,6 +183,7 @@ export class ProfileController {
     return this.profileService.findOne(id);
   }  
   
+  //Forgot Password
   @Patch('email/:email')
   async change(
     @Param('email') email: string,
@@ -184,7 +192,7 @@ export class ProfileController {
     if (updateProfileDto.password) {
       updateProfileDto.password = await bcrypt.hash(updateProfileDto.password, 12);
     }
-    return this.profileService.change(email, updateProfileDto); // Pass both email and updateProfileDto
+    return this.profileService.change(email, updateProfileDto);
   }
 
   

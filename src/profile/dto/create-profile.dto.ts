@@ -16,5 +16,6 @@ export class CreateProfileDto {
     companyPhone: string;
     userdataCompleted: boolean
     hrdataCompleted: boolean
+    hrStatus: boolean
 
 }

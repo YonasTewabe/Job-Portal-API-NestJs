@@ -58,4 +58,7 @@ export class Profile {
 
     @Column({ type: 'boolean', nullable: true, default: false})
     hrdataCompleted : boolean;
+
+    @Column({ type: 'boolean', nullable: true, default: true})
+    hrStatus : boolean;
 }
