@@ -69,9 +69,8 @@ export class ProfileController {
       throw new BadRequestException('Invalid credentials');
     }
 
-    const expiresIn = 3 * 60 * 60;
 
-    const jwt = await this.jwtService.signAsync({ id: profile.id }, {expiresIn});
+    const jwt = await this.jwtService.signAsync({ id: profile.id });
 
     response.cookie('jwt', jwt, { httpOnly: true });
 
