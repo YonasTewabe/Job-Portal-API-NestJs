@@ -11,7 +11,7 @@ import { Profile } from './entities/profile.entity';
     TypeOrmModule.forFeature([Profile]),
     JwtModule.register({
       secret: 'qazwsxedcrfvtgbyhnujmikolp',
-      signOptions: {expiresIn: '1h'}
+      signOptions: {expiresIn: '1d'}
     })
   ],
   controllers: [ProfileController],
