@@ -143,14 +143,11 @@ export class ProfileController {
     }
 
     try {
-      // Save the file to a specific directory
+      // Save the file to the wanted directory
       const filePath = './uploads/' + file.originalname;
       createWriteStream(filePath, file.buffer);
 
-      // Update the createProfileDto object with the file name
       const profileData = { ...createProfileDto, cv: file.originalname };
-
-      // Save the updated profileData to the database
       const profile = await this.profileService.create(profileData);
 
       return profile;
@@ -204,14 +201,13 @@ export class ProfileController {
     @Body() updateProfileDto: UpdateProfileDto,
     @UploadedFile() file: multer.File,
   ) {
-    // Hash the new password if it is provided
     if (updateProfileDto.password) {
       updateProfileDto.password = await bcrypt.hash(updateProfileDto.password, 12);
     }
   
     let profileData = { ...updateProfileDto };
     if (file) {
-      // Save the file to a specific directory
+      // Save the file to the wanted directory
       const filePath = './uploads/' + file.originalname;
       createWriteStream(filePath, { flags: 'w' }).write(file.buffer);
   
