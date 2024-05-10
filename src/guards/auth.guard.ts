@@ -23,7 +23,6 @@ export class AuthGuard implements CanActivate {
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const decodedToken = jwt.verify(token, 'qazwsxedcrfvtgbyhnujmikolp');
-      // You can now use the decodedToken to perform additional checks, e.g., check if the user exists in the database
       return true;
     } catch (error) {
       console.error('Error verifying JWT:', error);
