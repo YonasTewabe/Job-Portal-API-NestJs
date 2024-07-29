@@ -9,7 +9,7 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = new DocumentBuilder()
-  .setTitle('Jobs example')
+  .setTitle('Jobs API')
   .setDescription('The job API description')
   .setVersion('1.0')
   .addTag('Jobs')
@@ -21,9 +21,10 @@ SwaggerModule.setup('api', app, document);
   app.use(cookieParser());
   app.enableCors({
     // origin: 'http://localhost:3000',
-    origin: 'http://localhost:80',
+    origin: ['http://frontend:80', 'http://localhost:80'],
     credentials: true
-  })
+  });
+  
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
   const port = configService.get('PORT') || 5000;
   await app.listen(port);
