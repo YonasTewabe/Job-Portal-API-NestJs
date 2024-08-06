@@ -8,7 +8,7 @@ pipeline {
 
         DB_HOST = 'localhost' 
         DB_PORT = '5433'
-        DB_USER = 'yonas'
+        DB_USER = 'postgres'
         DB_PASSWORD = '987654312'
         DB_NAME = 'capstone'
     }
