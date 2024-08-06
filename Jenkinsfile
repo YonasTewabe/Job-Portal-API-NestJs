@@ -7,7 +7,7 @@ pipeline {
         NPM_CACHE = '/var/lib/jenkins/.npm'
 
         DB_HOST = 'localhost' 
-        DB_PORT = '5432'
+        DB_PORT = '5433'
         DB_USER = 'yonas'
         DB_PASSWORD = '987654312'
         DB_NAME = 'capstone'
