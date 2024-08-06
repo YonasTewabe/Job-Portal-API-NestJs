@@ -23,7 +23,7 @@ pipeline {
         stage('Clone Repo'){
             steps {
                 sh '''
-                    sudo git clone https://github.com/YonasTewabe/Job-Portal-API-NestJs.git
+                     git clone https://github.com/YonasTewabe/Job-Portal-API-NestJs.git
                      cd Job-Portal-API-NestJs
                 '''
             }
