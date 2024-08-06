@@ -20,6 +20,15 @@ pipeline {
             }
         }
 
+        stage('Clone Repo'){
+            steps {
+                sh '''
+                    sudo git clone https://github.com/YonasTewabe/Job-Portal-API-NestJs.git
+                     cd Job-Portal-API-NestJs
+                '''
+            }
+        }
+
         stage('Install Dependencies') {
             steps {
                 sh 'npm install'
