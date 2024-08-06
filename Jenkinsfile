@@ -6,7 +6,7 @@ pipeline {
         DEPLOY_DIR = '/home/ubuntu/nest'
         NPM_CACHE = '/var/lib/jenkins/.npm'
 
-        DB_HOST = '139.185.53.188' 
+        DB_HOST = 'localhost' 
         DB_PORT = '5432'
         DB_USER = 'yonas'
         DB_PASSWORD = '987654312'
@@ -26,12 +26,6 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            steps {
-                sh 'npm run build'
-            }
-        }
-
         stage('Run') {
             steps {
                 sh 'npm start'
@@ -42,7 +36,6 @@ pipeline {
             steps {
                 script {
                     sh "mkdir -p ${DEPLOY_DIR}"
-
 
                 }
             }
