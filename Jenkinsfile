@@ -14,14 +14,14 @@ pipeline {
             }
         }
 
-        stage('Setup Node.js') {
-            steps {
-                script {
-                    def nodeHome = tool name: 'nodejs', type: 'NodeJSInstallation'
-                    env.PATH = "${nodeHome}/bin:${env.PATH}"
-                }
-            }
-        }
+        // stage('Setup Node.js') {
+        //     steps {
+        //         script {
+        //             def nodeHome = tool name: 'nodejs', type: 'NodeJSInstallation'
+        //             env.PATH = "${nodeHome}/bin:${env.PATH}"
+        //         }
+        //     }
+        // }
 
         stage('Install Dependencies') {
             steps {
