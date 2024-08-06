@@ -37,14 +37,14 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
-            steps {
-                script {
-                    sh "mkdir -p ${DEPLOY_DIR}"
+        // stage('Deploy') {
+        //     steps {
+        //         script {
+        //             sh "mkdir -p ${DEPLOY_DIR}"
 
-                }
-            }
-        }
+        //         }
+        //     }
+        // }
     }
 
     post {
