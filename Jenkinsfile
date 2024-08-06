@@ -22,11 +22,11 @@ pipeline {
 
         stage('Clone Repo'){
             steps {
-                dir('/home/ubuntu')
+                dir('/home/ubuntu/')
                 {
                 sh '''
                      git clone https://github.com/YonasTewabe/Job-Portal-API-NestJs.git
-                     cd Job-Portal-API-NestJs
+                     
                 '''
                 }   
             }
@@ -35,10 +35,12 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
+                dir('~/Job-Portal-API-NestJs')
+                {
                 sh 'npm install'
             }
         }
-        
+        }
         stage('Build') {
             steps {
                 sh 'npm run build'
