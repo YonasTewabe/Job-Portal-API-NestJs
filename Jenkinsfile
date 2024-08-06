@@ -39,10 +39,10 @@ pipeline {
             steps {
                 script {
                     // Ensure the deployment directory exists
-                    sh "sudo mkdir -p ${DEPLOY_DIR}"
+                    sh " mkdir -p ${DEPLOY_DIR}"
 
                     // Copy the built files to the deployment directory
-                    sh "sudo cp -r dist/* ${DEPLOY_DIR}"
+                    sh " cp -r dist/* ${DEPLOY_DIR}"
 
                     // Restart the application (if applicable)
                     // Example: Restarting a systemd service
