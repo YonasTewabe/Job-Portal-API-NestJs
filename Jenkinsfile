@@ -22,7 +22,6 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'nvm install ${NODE_VERSION}'
                 sh 'npm install'
             }
         }
