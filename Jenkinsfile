@@ -25,10 +25,15 @@ pipeline {
                 sh 'npm install'
             }
         }
-
+        
+        stage('Build') {
+            steps {
+                sh 'npm run build'
+            }
+        }
         stage('Run') {
             steps {
-                sh 'npm start:prod'
+                sh 'npm run start:prod'
             }
         }
 
