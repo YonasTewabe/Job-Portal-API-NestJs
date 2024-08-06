@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         NODE_VERSION = '20' 
-        DEPLOY_DIR = '/var/www/html/job-portal/'
+        DEPLOY_DIR = '~/nest'
         NPM_CACHE = '/var/lib/jenkins/.npm'
     }
 
@@ -29,9 +29,9 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Run') {
             steps {
-                sh 'npm run build'
+                sh 'npm start'
             }
         }
 
@@ -40,9 +40,6 @@ pipeline {
                 script {
                     // Ensure the deployment directory exists
                     sh " mkdir -p ${DEPLOY_DIR}"
-
-                    // Copy the built files to the deployment directory
-                    sh " cp -r dist/* ${DEPLOY_DIR}"
 
                     // Restart the application (if applicable)
                     // Example: Restarting a systemd service
