@@ -54,7 +54,7 @@ pipeline {
         stage('Run') {
             steps {
                 dir('/home/ubuntu/Job-Portal-API-NestJs') {
-                    sh 'npm run start:prod'
+                    sh 'sudo npm run start:prod'
                 }
             }
         }
