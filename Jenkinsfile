@@ -2,9 +2,15 @@ pipeline {
     agent any
 
     environment {
-        NODE_VERSION = '20' 
-        DEPLOY_DIR = '~/nest'
+        NODE_VERSION = '20'
+        DEPLOY_DIR = '/home/ubuntu/nest'
         NPM_CACHE = '/var/lib/jenkins/.npm'
+
+        DB_HOST = '139.185.53.188' 
+        DB_PORT = '5432'
+        DB_USER = 'yonas'
+        DB_PASSWORD = '987654312'
+        DB_NAME = 'capstone'
     }
 
     stages {
@@ -14,18 +20,16 @@ pipeline {
             }
         }
 
-        // stage('Setup Node.js') {
-        //     steps {
-        //         script {
-        //             def nodeHome = tool name: 'nodejs', type: 'NodeJSInstallation'
-        //             env.PATH = "${nodeHome}/bin:${env.PATH}"
-        //         }
-        //     }
-        // }
-
         stage('Install Dependencies') {
             steps {
+                sh 'nvm install ${NODE_VERSION}'
                 sh 'npm install'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'npm run build'
             }
         }
 
@@ -38,28 +42,23 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // Ensure the deployment directory exists
-                    sh " mkdir -p ${DEPLOY_DIR}"
+                    sh "mkdir -p ${DEPLOY_DIR}"
 
-                    // Restart the application (if applicable)
-                    // Example: Restarting a systemd service
-                    // sh 'sudo systemctl restart your-nestjs-service'
+
                 }
             }
         }
     }
 
-  
     post {
         success {
-          echo "Pipeline successful"
+            echo "Pipeline successful"
         }
         failure {
-          echo "Pipeline failed"
+            echo "Pipeline failed"
         }
         always {
             cleanWs()
         }
-      
     }
 }
