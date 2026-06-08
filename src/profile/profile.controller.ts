@@ -1,223 +1,199 @@
-import { 
-  BadRequestException, 
-  Body, 
-  ConflictException, 
-  Controller, 
-  Delete, 
-  Get, 
-  HttpCode, 
-  Param, 
-  Patch, 
-  Post, 
-  Req, 
-  Res, 
-  UnauthorizedException, 
-  UploadedFile, 
-  UseGuards, 
-  UseInterceptors 
+import {
+  BadRequestException,
+  Body,
+  ConflictException,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Res,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Response as ExpressResponse } from 'express';
+import { createReadStream } from 'fs';
+import { join } from 'path';
+import * as bcrypt from 'bcrypt';
+import * as multer from 'multer';
+import { JwtService } from '@nestjs/jwt';
+import { ClassSerializerInterceptor } from '@nestjs/common';
+
 import { ProfileService } from './profile.service';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
-import { Response as ExpressResponse } from 'express';
-import { Request as ExpressRequest } from 'express';
-import { createReadStream, createWriteStream } from 'fs';
-import { join } from 'path';
-import * as multer from 'multer';
-import { AuthGuard } from 'src/guards/auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('profile')
+@UseInterceptors(ClassSerializerInterceptor) // Ensures @Exclude() on entity fields is respected
 export class ProfileController {
   constructor(
     private readonly profileService: ProfileService,
-    private jwtService: JwtService
+    private readonly jwtService: JwtService,
   ) {}
 
+  // ── Public routes (no token required) ──────────────────────────────────────
+
+  @Public()
   @Post('signup')
-  async register(
-    @Body() createProfileDto: CreateProfileDto,
-  ) {
-    const existingProfile = await this.profileService.findOneBy({ email: createProfileDto.email });
-    if (existingProfile) {
-      throw new ConflictException('Email already exists');
+  async register(@Body() createProfileDto: CreateProfileDto) {
+    const existing = await this.profileService.findOneBy({
+      email: createProfileDto.email,
+    });
+    if (existing) {
+      throw new ConflictException('Email already in use');
     }
-  
+
     const hashedPassword = await bcrypt.hash(createProfileDto.password, 12);
-  
-    const profile = await this.profileService.create({
+    const isHr = createProfileDto.role === 'hr';
+
+    return this.profileService.create({
       ...createProfileDto,
       password: hashedPassword,
       hrdataCompleted: false,
       userdataCompleted: false,
-      hrStatus: true
+      hrStatus: isHr,
     });
-  
-    return profile;
   }
 
+  @Public()
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   async login(
     @Body('email') email: string,
     @Body('password') password: string,
     @Res({ passthrough: true }) response: ExpressResponse,
   ) {
     const profile = await this.profileService.findOneBy({ email });
-    if (!profile || !await bcrypt.compare(password, profile.password)) {
+    if (!profile || !(await bcrypt.compare(password, profile.password))) {
+      // Use a generic message to avoid user enumeration
       throw new BadRequestException('Invalid credentials');
     }
 
+    const token = await this.jwtService.signAsync({
+      id: profile.id,
+      role: profile.role,
+    });
 
-    const jwt = await this.jwtService.signAsync({ id: profile.id });
-
-    response.cookie('jwt', jwt, { httpOnly: true });
+    response.cookie('jwt', token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    });
 
     return {
-      message: 'Success',
+      message: 'Login successful',
       profileId: profile.id,
       role: profile.role,
       usercompleted: profile.userdataCompleted,
       hrcompleted: profile.hrdataCompleted,
       hrStatus: profile.hrStatus,
-      jwt: jwt,
+      token,
     };
   }
 
-
-    //Return cv
-  @Get('pdf/:filename')
-  @UseGuards(AuthGuard)
-  getPdf(@Param('filename') filename: string, @Res() response: ExpressResponse) {
-    const filePath = join(__dirname, `../uploads/${filename}`);
-  
-    response.setHeader('Content-Type', 'application/pdf');
-    response.setHeader('Content-Disposition', `inline; filename=${filename}`);
-  
-    createReadStream(filePath).pipe(response);
-  }
-  
-
-  @Get('profile')
-  @UseGuards(AuthGuard)
-  async profile(@Req() request: ExpressRequest) {
-    try {
-      const cookie = request.cookies['jwt'];
-      const { id } = await this.jwtService.verifyAsync(cookie);
-  
-      if (!id) {
-        throw new UnauthorizedException();
-      }
-  
-      const profile = await this.profileService.findOne(id);
-      if (!profile) {
-        throw new UnauthorizedException();
-      }
-  
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, ...result } = profile;
-  
-      return { id: profile.id, ...result };
-    } catch (e) {
-      throw new UnauthorizedException();
-    }
-  }
-  
+  @Public()
   @Post('logout')
-  @HttpCode(200) // Ensure the response code is 200 OK
-  async logout(@Res({ passthrough: true }) response: ExpressResponse) {
+  @HttpCode(HttpStatus.OK)
+  logout(@Res({ passthrough: true }) response: ExpressResponse) {
     response.clearCookie('jwt');
     response.setHeader('Cache-Control', 'no-store');
     return { message: 'Logout successful' };
   }
-  
-  
-  //Posting CV
+
+  // ── Authenticated routes (global JwtAuthGuard applies) ─────────────────────
+
+  /** Returns the currently authenticated user's profile */
+  @Get('me')
+  async getMe(@CurrentUser() user: { id: string }) {
+    const profile = await this.profileService.findOne(user.id);
+    if (!profile) {
+      throw new BadRequestException('Profile not found');
+    }
+    return profile; // password excluded by @Exclude() + ClassSerializerInterceptor
+  }
+
+  /** Serve a CV file */
+  @Get('pdf/:filename')
+  getPdf(
+    @Param('filename') filename: string,
+    @Res() response: ExpressResponse,
+  ) {
+    const filePath = join(__dirname, '..', 'uploads', filename);
+    response.setHeader('Content-Type', 'application/pdf');
+    response.setHeader('Content-Disposition', `inline; filename=${filename}`);
+    createReadStream(filePath).pipe(response);
+  }
+
+  /** Upload a CV and create a profile */
   @Post('upload')
-  @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file, @Body() createProfileDto: CreateProfileDto) {
+  async uploadFile(
+    @UploadedFile() file: multer.File,
+    @Body() createProfileDto: CreateProfileDto,
+  ) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
-
-    try {
-      // Save the file to the wanted directory
-      const filePath = './uploads/' + file.originalname;
-      createWriteStream(filePath, file.buffer);
-
-      const profileData = { ...createProfileDto, cv: file.originalname };
-      const profile = await this.profileService.create(profileData);
-
-      return profile;
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      throw new BadRequestException('Failed to upload file');
-    }
-  }
-
-  @Post('create')
-  @UseGuards(AuthGuard)
-  async createProfile(@Body() createProfileDto: CreateProfileDto) {
-    const { password, ...rest } = createProfileDto;
-    const hashedPassword = await bcrypt.hash(password, 12);
-    const profile = await this.profileService.create({ ...rest, password: hashedPassword });
-
-    return profile;
+    return this.profileService.create({
+      ...createProfileDto,
+      cv: file.originalname,
+    });
   }
 
   @Get('all')
-  @UseGuards(AuthGuard)
   findAll() {
     return this.profileService.findAll();
   }
 
   @Get(':id')
-  @UseGuards(AuthGuard)
   findOne(@Param('id') id: string) {
     return this.profileService.findOne(id);
-  }  
-  
-  //Forgot Password
+  }
+
+  /** Forgot password — update by email, no token required */
+  @Public()
   @Patch('email/:email')
-  async change(
+  async changeByEmail(
     @Param('email') email: string,
-    @Body() updateProfileDto: UpdateProfileDto
+    @Body() updateProfileDto: UpdateProfileDto,
   ) {
     if (updateProfileDto.password) {
-      updateProfileDto.password = await bcrypt.hash(updateProfileDto.password, 12);
+      updateProfileDto.password = await bcrypt.hash(
+        updateProfileDto.password,
+        12,
+      );
     }
     return this.profileService.change(email, updateProfileDto);
   }
 
-  
-
   @Patch(':id')
-  @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   async update(
     @Param('id') id: string,
     @Body() updateProfileDto: UpdateProfileDto,
-    @UploadedFile() file: multer.File,
+    @UploadedFile() file?: multer.File,
   ) {
     if (updateProfileDto.password) {
-      updateProfileDto.password = await bcrypt.hash(updateProfileDto.password, 12);
+      updateProfileDto.password = await bcrypt.hash(
+        updateProfileDto.password,
+        12,
+      );
     }
-  
+
     let profileData = { ...updateProfileDto };
+
     if (file) {
-      // Save the file to the wanted directory
-      const filePath = './uploads/' + file.originalname;
-      createWriteStream(filePath, { flags: 'w' }).write(file.buffer);
-  
-      // Update the createProfileDto object with the file name
-      profileData = { ...updateProfileDto, cv: file.originalname };
+      profileData = { ...profileData, cv: file.originalname };
     }
-  
-    // Check if all specified fields are not empty
+
+    // Auto-flag profile completion
     if (
-      profileData && 
       profileData.fullname &&
       profileData.age &&
       profileData.sex &&
@@ -228,27 +204,22 @@ export class ProfileController {
       profileData.cv
     ) {
       profileData.userdataCompleted = true;
-    }   
-     if (
-      profileData && 
+    }
+
+    if (
       profileData.companyname &&
       profileData.companydescription &&
       profileData.contactemail &&
-      profileData.companyPhone 
+      profileData.companyPhone
     ) {
       profileData.hrdataCompleted = true;
     }
-  
+
     return this.profileService.update(id, profileData);
   }
-  
-  
 
   @Delete(':id')
-  @UseGuards(AuthGuard)
   remove(@Param('id') id: string) {
-    
     return this.profileService.remove(id);
   }
-  
 }
