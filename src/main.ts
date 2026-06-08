@@ -20,13 +20,12 @@ SwaggerModule.setup('api', app, document);
   const configService = app.get(ConfigService);
   app.use(cookieParser());
   app.enableCors({
-    // origin: 'http://localhost:3000',
-    origin: ['http://frontend:80', 'http://localhost:80'],
-    credentials: true
+    origin: configService.get<string>('CORS_ORIGIN'),
+    credentials: true,
   });
-  
+
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
-  const port = configService.get('PORT') || 5000;
+  const port = configService.get<number>('PORT');
   await app.listen(port);
 }
 bootstrap();
