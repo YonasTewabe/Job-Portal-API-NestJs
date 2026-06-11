@@ -15,12 +15,21 @@ import { CompanyService } from './company.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('companies')
 @UseInterceptors(ClassSerializerInterceptor)
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
+
+  /** Public: self-service company registration */
+  @Public()
+  @Post('register')
+  @HttpCode(HttpStatus.CREATED)
+  register(@Body() dto: CreateCompanyDto) {
+    return this.companyService.create(dto);
+  }
 
   /** Superadmin: create a company + its company_admin account */
   @Post()

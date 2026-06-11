@@ -18,6 +18,8 @@ import { ApplicantModule } from './applicant/applicant.module';
 import { JobsModule } from './jobs/jobs.module';
 import { ApplicationModule } from './application/application.module';
 import { FileModule } from './file.module';
+import { ChapaModule } from './chapa/chapa.module';
+import { PricingModule } from './pricing/pricing.module';
 
 @Module({
   imports: [
@@ -39,6 +41,8 @@ import { FileModule } from './file.module';
     JobsModule,
     ApplicationModule,
     FileModule,
+    ChapaModule,
+    PricingModule,
   ],
   controllers: [AppController],
   providers: [

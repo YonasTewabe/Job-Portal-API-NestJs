@@ -39,4 +39,13 @@ export class AppConfigService {
   get jwtSecret(): string {
     return this.config.get<string>('JWT_SECRET');
   }
+
+  // ── Chapa ─────────────────────────────────────────────────────────────────
+  get chapaSecretKey(): string | undefined {
+    return this.config.get<string>('CHAPA_SECRET_KEY');
+  }
+
+  get chapaEncryptionKey(): string | undefined {
+    return this.config.get<string>('CHAPA_ENCRYPTION_KEY');
+  }
 }

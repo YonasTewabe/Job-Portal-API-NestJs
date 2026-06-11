@@ -28,6 +28,9 @@ export class Job {
   @Column({ type: 'date' })
   deadline: Date;
 
+  @Column({ default: true })
+  isOpen: boolean;
+
   @ManyToOne(() => Company, (company) => company.jobs, { eager: true, nullable: false })
   company: Company;
 

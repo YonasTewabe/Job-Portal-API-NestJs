@@ -27,6 +27,7 @@ export class JobsService {
       requirement: dto.requirement,
       salary: dto.salary,
       deadline: new Date(dto.deadline),
+      isOpen: true,
       company,
     });
     return this.jobsRepo.save(job);
@@ -59,8 +60,9 @@ export class JobsService {
       if (!company) throw new NotFoundException('Company not found');
       job.company = company;
     }
-    const { companyId: _, ...rest } = dto;
+    const { companyId: _, deadline, ...rest } = dto;
     Object.assign(job, rest);
+    if (deadline) job.deadline = new Date(deadline);
     return this.jobsRepo.save(job);
   }
 

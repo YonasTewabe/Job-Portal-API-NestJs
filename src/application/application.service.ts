@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -25,9 +26,20 @@ export class ApplicationService {
   async create(dto: CreateApplicationDto): Promise<Application> {
     const applicant = await this.applicantRepo.findOneBy({ id: dto.applicantId });
     if (!applicant) throw new NotFoundException('Applicant not found');
+    if (!applicant.profileCompleted) {
+      throw new BadRequestException(
+        'Complete your profile before applying for jobs',
+      );
+    }
 
     const job = await this.jobRepo.findOneBy({ id: dto.jobId });
     if (!job) throw new NotFoundException('Job not found');
+    if (job.isOpen === false) {
+      throw new BadRequestException('This job is no longer accepting applications');
+    }
+    if (new Date(job.deadline) < new Date()) {
+      throw new BadRequestException('Application deadline has passed');
+    }
 
     // Prevent duplicate applications
     const existing = await this.applicationRepo.findOne({

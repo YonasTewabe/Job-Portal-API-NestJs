@@ -9,25 +9,36 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Application } from '../../application/entities/application.entity';
 
+export interface EducationEntry {
+  degree: string;
+  university: string;
+  startDate: string;
+  endDate?: string;
+}
+
+export interface ExperienceEntry {
+  title: string;
+  company: string;
+  startDate: string;
+  endDate?: string;
+}
+
 @Entity({ name: 'applicants' })
 export class Applicant {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', nullable: true })
-  age: string;
+  @Column({ type: 'date', nullable: true })
+  dateOfBirth: Date;
 
   @Column({ type: 'varchar', nullable: true })
   sex: string;
 
-  @Column({ type: 'text', nullable: true })
-  degree: string;
+  @Column({ type: 'jsonb', default: () => "'[]'" })
+  educations: EducationEntry[];
 
-  @Column({ type: 'text', nullable: true })
-  university: string;
-
-  @Column({ type: 'text', nullable: true })
-  experience: string;
+  @Column({ type: 'jsonb', default: () => "'[]'" })
+  experiences: ExperienceEntry[];
 
   @Column({ type: 'varchar', nullable: true })
   phone: string;

@@ -1,9 +1,29 @@
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsDateString,
+  IsEmail,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+import { EducationEntryDto } from './education-entry.dto';
+import { ExperienceEntryDto } from './experience-entry.dto';
 
 export class UpdateApplicantDto {
   @IsOptional()
   @IsString()
-  age?: string;
+  fullname?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsDateString()
+  dateOfBirth?: string;
 
   @IsOptional()
   @IsString()
@@ -11,19 +31,21 @@ export class UpdateApplicantDto {
 
   @IsOptional()
   @IsString()
-  degree?: string;
+  userPhone?: string;
 
   @IsOptional()
-  @IsString()
-  university?: string;
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => EducationEntryDto)
+  educations?: EducationEntryDto[];
 
   @IsOptional()
-  @IsString()
-  experience?: string;
-
-  @IsOptional()
-  @IsString()
-  phone?: string;
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => ExperienceEntryDto)
+  experiences?: ExperienceEntryDto[];
 
   @IsOptional()
   @IsString()
