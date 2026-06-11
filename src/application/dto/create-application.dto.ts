@@ -1,14 +1,12 @@
-export class CreateApplicationDto {
- companyname: string;
- jobtitle: string;
- applicationdate: Date;
- fullname: string;
- contactemail: string;
- status: string;
- userid: string;
- jobid: string;
- cv: string;
- interviewDate: Date;
- interviewLocation: string;
+import { IsDateString, IsUUID } from 'class-validator';
 
+export class CreateApplicationDto {
+  @IsUUID()
+  jobId: string;
+
+  @IsUUID()
+  applicantId: string;
+
+  @IsDateString()
+  applicationDate: string;
 }

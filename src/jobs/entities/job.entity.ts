@@ -1,11 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import {v4 as uuidv4} from 'uuid';
-
+import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Company } from '../../company/entities/company.entity';
+import { Application } from '../../application/entities/application.entity';
 
 @Entity({ name: 'jobs' })
 export class Job {
   @PrimaryGeneratedColumn('uuid')
-  id: uuidv4;
+  id: string;
 
   @Column({ type: 'text' })
   title: string;
@@ -25,21 +25,12 @@ export class Job {
   @Column({ type: 'text' })
   salary: string;
 
-  @Column({ type: 'text' })
-  companyName: string;
-
-  @Column({ type: 'text'})
-  companyDescription: string;
-
-  @Column({ type: 'text' })
-  contactEmail: string;
-
-  @Column({ type: 'varchar' })
-  companyPhone: number;
-
   @Column({ type: 'date' })
   deadline: Date;
 
-  @Column({type: 'text'})
-  userId: string;
+  @ManyToOne(() => Company, (company) => company.jobs, { eager: true, nullable: false })
+  company: Company;
+
+  @OneToMany(() => Application, (application) => application.job)
+  applications: Application[];
 }

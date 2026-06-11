@@ -1,4 +1,15 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateApplicationDto } from './create-application.dto';
+import { IsDateString, IsOptional, IsString } from 'class-validator';
 
-export class UpdateApplicationDto extends PartialType(CreateApplicationDto) {}
+export class UpdateApplicationDto {
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @IsOptional()
+  @IsDateString()
+  interviewDate?: string;
+
+  @IsOptional()
+  @IsString()
+  interviewLocation?: string;
+}

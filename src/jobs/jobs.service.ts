@@ -1,48 +1,71 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateJobDto } from './dto/create-job.dto';
-import { UpdateJobDto } from './dto/update-job.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Job } from './entities/job.entity';
+import { Company } from '../company/entities/company.entity';
+import { CreateJobDto } from './dto/create-job.dto';
+import { UpdateJobDto } from './dto/update-job.dto';
 
 @Injectable()
 export class JobsService {
   constructor(
     @InjectRepository(Job)
-    private readonly jobsRepository: Repository<Job>){
+    private readonly jobsRepo: Repository<Job>,
+    @InjectRepository(Company)
+    private readonly companyRepo: Repository<Company>,
+  ) {}
 
-  }
-  async create(createJobDto: CreateJobDto) {
-    const job = this.jobsRepository.create(createJobDto)
-    
-    return await this.jobsRepository.save(job);
+  async create(dto: CreateJobDto): Promise<Job> {
+    const company = await this.companyRepo.findOneBy({ id: dto.companyId });
+    if (!company) throw new NotFoundException('Company not found');
+
+    const job = this.jobsRepo.create({
+      title: dto.title,
+      type: dto.type,
+      location: dto.location,
+      description: dto.description,
+      requirement: dto.requirement,
+      salary: dto.salary,
+      deadline: new Date(dto.deadline),
+      company,
+    });
+    return this.jobsRepo.save(job);
   }
 
-  async findAll() {
-    return await this.jobsRepository.find();
+  async findAll(): Promise<Job[]> {
+    return this.jobsRepo.find({ relations: ['company'] });
   }
 
-  async findOne(id: string) {
-    return await this.jobsRepository.findOne({
-      where: { id }
+  async findByCompany(companyId: string): Promise<Job[]> {
+    return this.jobsRepo.find({
+      where: { company: { id: companyId } },
+      relations: ['company'],
     });
   }
 
-  async update(id: string, updateJobDto: UpdateJobDto) {
-    const job = await this.findOne(id);
-    if(!job){
-      throw new NotFoundException()
-    }
-    Object.assign(job, updateJobDto)
-
-    return await this.jobsRepository.save(job)
+  async findOne(id: string): Promise<Job> {
+    const job = await this.jobsRepo.findOne({
+      where: { id },
+      relations: ['company'],
+    });
+    if (!job) throw new NotFoundException('Job not found');
+    return job;
   }
 
-  async remove(id: string) {
+  async update(id: string, dto: UpdateJobDto): Promise<Job> {
     const job = await this.findOne(id);
-    if(!job){
-      throw new NotFoundException()
+    if (dto.companyId) {
+      const company = await this.companyRepo.findOneBy({ id: dto.companyId });
+      if (!company) throw new NotFoundException('Company not found');
+      job.company = company;
     }
-    return await this.jobsRepository.remove(job)
+    const { companyId: _, ...rest } = dto;
+    Object.assign(job, rest);
+    return this.jobsRepo.save(job);
+  }
+
+  async remove(id: string): Promise<void> {
+    const job = await this.findOne(id);
+    await this.jobsRepo.remove(job);
   }
 }

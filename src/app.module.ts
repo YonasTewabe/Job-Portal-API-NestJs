@@ -1,23 +1,31 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { config } from './orm.config';
+import { AppConfigModule } from './config/config.module';
+import { AppConfigService } from './config/config.service';
+import { ormConfig } from './orm.config';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { RolesGuard } from './auth/guards/roles.guard';
+import { UsersModule } from './users/users.module';
+import { CompanyModule } from './company/company.module';
+import { ApplicantModule } from './applicant/applicant.module';
 import { JobsModule } from './jobs/jobs.module';
 import { ApplicationModule } from './application/application.module';
-import { ProfileModule } from './profile/profile.module';
+import { FileModule } from './file.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    TypeOrmModule.forRoot(config),
+    AppConfigModule,
+    TypeOrmModule.forRootAsync({
+      inject: [AppConfigService],
+      useFactory: (cfg: AppConfigService) => ormConfig(cfg),
+    }),
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads',
@@ -25,19 +33,18 @@ import { ProfileModule } from './profile/profile.module';
       }),
     }),
     AuthModule,
+    UsersModule,
+    CompanyModule,
+    ApplicantModule,
     JobsModule,
     ApplicationModule,
-    ProfileModule,
+    FileModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
-    // Apply JwtAuthGuard to every route by default.
-    // Mark public routes with @Public() to opt out.
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
 export class AppModule {}

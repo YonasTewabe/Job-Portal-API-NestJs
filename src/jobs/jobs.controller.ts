@@ -1,12 +1,17 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
 } from '@nestjs/common';
+import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { JobsService } from './jobs.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
@@ -15,13 +20,18 @@ import { UpdateJobDto } from './dto/update-job.dto';
 export class JobsController {
   constructor(private readonly jobsService: JobsService) {}
 
-  @Post('create')
-  create(@Body() createJobDto: CreateJobDto) {
-    return this.jobsService.create(createJobDto);
+  /** Company admin: post a new job */
+  @Post()
+  @Roles('company_admin', 'superadmin')
+  @HttpCode(HttpStatus.CREATED)
+  create(@Body() dto: CreateJobDto) {
+    return this.jobsService.create(dto);
   }
 
+  /** Anyone authenticated can browse jobs */
   @Get()
-  findAll() {
+  findAll(@Query('companyId') companyId?: string) {
+    if (companyId) return this.jobsService.findByCompany(companyId);
     return this.jobsService.findAll();
   }
 
@@ -31,11 +41,14 @@ export class JobsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateJobDto: UpdateJobDto) {
-    return this.jobsService.update(id, updateJobDto);
+  @Roles('company_admin', 'superadmin')
+  update(@Param('id') id: string, @Body() dto: UpdateJobDto) {
+    return this.jobsService.update(id, dto);
   }
 
   @Delete(':id')
+  @Roles('company_admin', 'superadmin')
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
     return this.jobsService.remove(id);
   }

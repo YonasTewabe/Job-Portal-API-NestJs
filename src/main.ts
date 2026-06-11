@@ -1,28 +1,26 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { ConfigService } from '@nestjs/config';
 import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
 import { join } from 'path';
 
 import { AppModule } from './app.module';
+import { AppConfigService } from './config/config.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const configService = app.get(ConfigService);
+  const cfg = app.get(AppConfigService);
 
-  // Strip unknown fields and validate all incoming request bodies
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,       // strip properties not in the DTO
+      whitelist: true,
       forbidNonWhitelisted: false,
-      transform: true,       // auto-transform payloads to DTO class instances
+      transform: true,
     }),
   );
 
-  // Honour @Exclude() decorators on entity classes globally
   app.useGlobalInterceptors(
     new ClassSerializerInterceptor(app.get(Reflector)),
   );
@@ -30,9 +28,11 @@ async function bootstrap() {
   app.use(cookieParser());
 
   app.enableCors({
-    origin: configService.get<string>('CORS_ORIGIN'),
+    origin: cfg.corsOrigin,
     credentials: true,
   });
+
+  app.setGlobalPrefix('api');
 
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 
@@ -43,9 +43,8 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('docs', app, document);
 
-  const port = configService.get<number>('PORT');
-  await app.listen(port);
+  await app.listen(cfg.port);
 }
 bootstrap();
