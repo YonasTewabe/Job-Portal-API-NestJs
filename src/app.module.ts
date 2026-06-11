@@ -22,6 +22,7 @@ import { ChapaModule } from './chapa/chapa.module';
 import { PricingModule } from './pricing/pricing.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { PaymentsModule } from './payments/payments.module';
     PricingModule,
     NotificationsModule,
     PaymentsModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [

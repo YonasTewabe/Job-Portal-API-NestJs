@@ -12,6 +12,7 @@ import { Job } from '../jobs/entities/job.entity';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ChatService } from '../chat/chat.service';
 
 @Injectable()
 export class ApplicationService {
@@ -23,6 +24,7 @@ export class ApplicationService {
     @InjectRepository(Job)
     private readonly jobRepo: Repository<Job>,
     private readonly notificationsService: NotificationsService,
+    private readonly chatService: ChatService,
   ) {}
 
   async create(dto: CreateApplicationDto): Promise<Application> {
@@ -104,7 +106,7 @@ export class ApplicationService {
   async findOne(id: string): Promise<Application> {
     const app = await this.applicationRepo.findOne({
       where: { id },
-      relations: ['applicant', 'applicant.user', 'job', 'job.company'],
+      relations: ['applicant', 'applicant.user', 'job', 'job.company', 'job.company.admin'],
     });
     if (!app) throw new NotFoundException('Application not found');
     return app;
@@ -121,11 +123,19 @@ export class ApplicationService {
       ? new Date(application.interviewDate).toISOString()
       : null;
     const previousInterviewLocation = application.interviewLocation ?? null;
+    const previousInterviewHasTime = application.interviewHasTime ?? false;
+
+    if (dto.interviewDate !== undefined) {
+      const hasTime =
+        dto.interviewHasTime ?? application.interviewHasTime ?? false;
+      this.assertInterviewNotInPast(dto.interviewDate, hasTime);
+    }
 
     Object.assign(application, dto);
     const saved = await this.applicationRepo.save(application);
 
     const applicantUserId = application.applicant?.user?.id;
+    const adminUserId = application.job?.company?.admin?.id;
     const jobTitle = application.job?.title ?? 'a job';
 
     try {
@@ -142,6 +152,18 @@ export class ApplicationService {
             interviewLocation: saved.interviewLocation,
             applicationId: saved.id,
           });
+          if (adminUserId) {
+            await this.chatService.sendApplicationStatusMessage({
+              applicationId: saved.id,
+              senderUserId: adminUserId,
+              content: this.buildInterviewScheduledMessage(
+                jobTitle,
+                saved.interviewDate,
+                saved.interviewLocation,
+                saved.interviewHasTime,
+              ),
+            });
+          }
         } else {
           await this.notificationsService.notifyApplicationStatus({
             applicantUserId,
@@ -149,6 +171,19 @@ export class ApplicationService {
             status: dto.status,
             applicationId: saved.id,
           });
+          if (adminUserId) {
+            const chatMessage = this.buildStatusChangeMessage(
+              jobTitle,
+              dto.status,
+            );
+            if (chatMessage) {
+              await this.chatService.sendApplicationStatusMessage({
+                applicationId: saved.id,
+                senderUserId: adminUserId,
+                content: chatMessage,
+              });
+            }
+          }
         }
       } else if (
         applicantUserId &&
@@ -160,7 +195,9 @@ export class ApplicationService {
           (dto.interviewDate &&
             new Date(dto.interviewDate).toISOString() !== previousInterviewDate) ||
           (dto.interviewLocation !== undefined &&
-            dto.interviewLocation !== previousInterviewLocation);
+            dto.interviewLocation !== previousInterviewLocation) ||
+          (dto.interviewHasTime !== undefined &&
+            dto.interviewHasTime !== previousInterviewHasTime);
 
         if (interviewChanged) {
           await this.notificationsService.notifyInterviewUpdated({
@@ -170,10 +207,22 @@ export class ApplicationService {
             interviewLocation: saved.interviewLocation,
             applicationId: saved.id,
           });
+          if (adminUserId) {
+            await this.chatService.sendApplicationStatusMessage({
+              applicationId: saved.id,
+              senderUserId: adminUserId,
+              content: this.buildInterviewRescheduledMessage(
+                jobTitle,
+                saved.interviewDate,
+                saved.interviewLocation,
+                saved.interviewHasTime,
+              ),
+            });
+          }
         }
       }
     } catch {
-      // Notification failures must not block status updates
+      // Notification and chat failures must not block status updates
     }
 
     return saved;
@@ -182,5 +231,80 @@ export class ApplicationService {
   async remove(id: string): Promise<void> {
     const app = await this.findOne(id);
     await this.applicationRepo.remove(app);
+  }
+
+  private assertInterviewNotInPast(
+    interviewDate: string,
+    hasTime: boolean,
+  ): void {
+    const now = new Date();
+    if (!hasTime) {
+      const todayStart = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+      );
+      const dateOnly = interviewDate.slice(0, 10);
+      const selected = new Date(`${dateOnly}T00:00:00`);
+      if (selected < todayStart) {
+        throw new BadRequestException(
+          'Interview must be scheduled for today or a future date',
+        );
+      }
+      return;
+    }
+    if (new Date(interviewDate) < now) {
+      throw new BadRequestException(
+        'Interview must be scheduled for today or a future date',
+      );
+    }
+  }
+
+  private formatInterviewWhen(
+    date: Date | string,
+    hasTime = true,
+  ): string {
+    const d = new Date(date);
+    if (!hasTime) {
+      return d.toLocaleDateString('en-US', { dateStyle: 'medium' });
+    }
+    return d.toLocaleString('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+  }
+
+  private buildStatusChangeMessage(
+    jobTitle: string,
+    status: string,
+  ): string | null {
+    switch (status) {
+      case 'Under Consideration':
+        return `Your application for "${jobTitle}" has been accepted and is under consideration.`;
+      case 'Rejected':
+        return `Your application for "${jobTitle}" was not selected.`;
+      default:
+        return null;
+    }
+  }
+
+  private buildInterviewScheduledMessage(
+    jobTitle: string,
+    interviewDate: Date | string,
+    interviewLocation: string,
+    hasTime = true,
+  ): string {
+    const when = this.formatInterviewWhen(interviewDate, hasTime);
+    return `Your interview for "${jobTitle}" has been scheduled on ${when} at ${interviewLocation}.`;
+  }
+
+  private buildInterviewRescheduledMessage(
+    jobTitle: string,
+    interviewDate: Date | string,
+    interviewLocation: string,
+    hasTime = true,
+  ): string {
+    const when = this.formatInterviewWhen(interviewDate, hasTime);
+    return `Your interview for "${jobTitle}" has been rescheduled to ${when} at ${interviewLocation}.`;
   }
 }

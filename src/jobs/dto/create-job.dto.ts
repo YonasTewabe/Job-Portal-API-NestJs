@@ -1,4 +1,4 @@
-import { IsDateString, IsString, IsUUID } from 'class-validator';
+import { IsDateString, IsOptional, IsString, IsUUID } from 'class-validator';
 import { IsFutureDate } from '../validators/is-future-date.validator';
 
 export class CreateJobDto {
@@ -17,8 +17,9 @@ export class CreateJobDto {
   @IsString()
   requirement: string;
 
+  @IsOptional()
   @IsString()
-  salary: string;
+  salary?: string;
 
   @IsDateString()
   @IsFutureDate()

@@ -6,11 +6,13 @@ import { Job } from '../jobs/entities/job.entity';
 import { ApplicationService } from './application.service';
 import { ApplicationController } from './application.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Application, Applicant, Job]),
     NotificationsModule,
+    ChatModule,
   ],
   controllers: [ApplicationController],
   providers: [ApplicationService],

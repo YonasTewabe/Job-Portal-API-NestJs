@@ -1,4 +1,4 @@
-import { IsDateString, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDateString, IsOptional, IsString } from 'class-validator';
 
 export class UpdateApplicationDto {
   @IsOptional()
@@ -8,6 +8,10 @@ export class UpdateApplicationDto {
   @IsOptional()
   @IsDateString()
   interviewDate?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  interviewHasTime?: boolean;
 
   @IsOptional()
   @IsString()

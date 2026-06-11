@@ -13,8 +13,11 @@ export class Application {
   @Column({ type: 'varchar', default: 'Pending' })
   status: string;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   interviewDate: Date;
+
+  @Column({ type: 'boolean', default: false })
+  interviewHasTime: boolean;
 
   @Column({ type: 'text', nullable: true })
   interviewLocation: string;

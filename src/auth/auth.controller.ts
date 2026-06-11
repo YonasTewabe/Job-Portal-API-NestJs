@@ -51,6 +51,7 @@ export class AuthController {
       jwt,           // also returned in body so frontend can store it
       userId: user.id,
       name: user.name,
+      email: user.email,
       role: user.role,
       // Extra context for company_admin so frontend can navigate correctly
       companyId: user.company?.id ?? null,

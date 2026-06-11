@@ -49,13 +49,17 @@ export class CompanyService {
   }
 
   async findAll(): Promise<Company[]> {
-    return this.companyRepo.find({ relations: ['admin', 'jobs'] });
+    return this.companyRepo.find({
+      relations: ['admin', 'jobs'],
+      order: { jobs: { createdAt: 'DESC' } },
+    });
   }
 
   async findOne(id: string): Promise<Company> {
     const company = await this.companyRepo.findOne({
       where: { id },
       relations: ['admin', 'jobs'],
+      order: { jobs: { createdAt: 'DESC' } },
     });
     if (!company) throw new NotFoundException('Company not found');
     return company;
@@ -65,6 +69,7 @@ export class CompanyService {
     const company = await this.companyRepo.findOne({
       where: { admin: { id: adminId } },
       relations: ['admin', 'jobs'],
+      order: { jobs: { createdAt: 'DESC' } },
     });
     if (!company) throw new NotFoundException('Company not found');
     return company;
