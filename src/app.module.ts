@@ -20,6 +20,8 @@ import { ApplicationModule } from './application/application.module';
 import { FileModule } from './file.module';
 import { ChapaModule } from './chapa/chapa.module';
 import { PricingModule } from './pricing/pricing.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -43,6 +45,8 @@ import { PricingModule } from './pricing/pricing.module';
     FileModule,
     ChapaModule,
     PricingModule,
+    NotificationsModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [

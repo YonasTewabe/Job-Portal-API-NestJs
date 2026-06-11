@@ -28,13 +28,15 @@ export class JobsController {
     return this.jobsService.create(dto);
   }
 
-  /** Anyone authenticated can browse jobs */
+  /** Public: browse job listings */
+  @Public()
   @Get()
   findAll(@Query('companyId') companyId?: string) {
     if (companyId) return this.jobsService.findByCompany(companyId);
     return this.jobsService.findAll();
   }
 
+  @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.jobsService.findOne(id);
