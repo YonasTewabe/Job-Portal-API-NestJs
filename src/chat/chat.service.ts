@@ -83,7 +83,7 @@ export class ChatService {
     };
 
     if (user.role === 'superadmin') {
-      const adminConversationTypes = ['company_support', 'platform_contact'] as const;
+      const adminConversationTypes = ['company_support', 'platform_contact', 'user_support'] as const;
       for (const type of adminConversationTypes) {
         const adminConversations = await this.conversationRepo.find({
           where: { type },
@@ -125,6 +125,9 @@ export class ChatService {
     }
     if (dto.type === 'company_support') {
       return this.getOrCreateSupportConversation(dto.companyId, user);
+    }
+    if (dto.type === 'user_support') {
+      return this.getOrCreateUserSupportConversation(dto.userId, user);
     }
     throw new BadRequestException('Invalid conversation type');
   }
@@ -275,6 +278,44 @@ export class ChatService {
     );
   }
 
+  /** Returns existing user-support conversation or null (does not create). */
+  async findUserSupportConversation(
+    userId: string | undefined,
+    user: AuthUser,
+  ) {
+    const targetUser = await this.resolveUserSupportTarget(userId, user);
+    let conversation = await this.findUserSupportConversationEntity(targetUser.id);
+    if (!conversation) return null;
+
+    if (user.role === 'superadmin') {
+      conversation = await this.syncAllSuperadminParticipants(conversation);
+      conversation = await this.ensureSuperadminParticipant(conversation, user.id);
+    }
+
+    const participant = await this.participantRepo.findOne({
+      where: {
+        conversation: { id: conversation.id },
+        user: { id: user.id },
+      },
+    });
+
+    const [lastMessage] = await this.messageRepo.find({
+      where: { conversation: { id: conversation.id } },
+      relations: ['sender'],
+      order: { createdAt: 'DESC' },
+      take: 1,
+    });
+
+    return this.formatConversation(
+      conversation,
+      user,
+      lastMessage ?? null,
+      participant
+        ? await this.countUnread(conversation.id, user.id, participant.lastReadAt)
+        : 0,
+    );
+  }
+
   /** Returns existing company-support conversation or null (does not create). */
   async findSupportConversation(
     companyId: string | undefined,
@@ -412,7 +453,7 @@ export class ChatService {
   async getUnreadTotal(userId: string): Promise<number> {
     const user = await this.userRepo.findOneBy({ id: userId });
     if (user?.role === 'superadmin') {
-      const adminConversationTypes = ['company_support', 'platform_contact'] as const;
+      const adminConversationTypes = ['company_support', 'platform_contact', 'user_support'] as const;
       for (const type of adminConversationTypes) {
         const adminConversations = await this.conversationRepo.find({
           where: { type },
@@ -572,6 +613,111 @@ export class ChatService {
     return saved;
   }
 
+  private async getOrCreateUserSupportConversation(
+    userId: string | undefined,
+    user: AuthUser,
+  ) {
+    const targetUser = await this.resolveUserSupportTarget(userId, user);
+    let conversation = await this.ensureUserSupportConversation(targetUser.id);
+
+    if (user.role === 'superadmin') {
+      conversation = await this.ensureSuperadminParticipant(
+        conversation,
+        user.id,
+      );
+    }
+
+    return this.formatConversation(conversation, user, null, 0);
+  }
+
+  private async resolveUserSupportTarget(
+    userId: string | undefined,
+    user: AuthUser,
+  ): Promise<User> {
+    if (user.role === 'superadmin') {
+      if (!userId) {
+        throw new BadRequestException('userId is required for superadmin');
+      }
+      const targetUser = await this.userRepo.findOneBy({ id: userId });
+      if (!targetUser) throw new NotFoundException('User not found');
+      if (targetUser.role !== 'user') {
+        throw new BadRequestException('Only job seeker accounts can be messaged');
+      }
+      return targetUser;
+    }
+
+    if (user.role === 'user') {
+      const self = await this.userRepo.findOneBy({ id: user.id });
+      if (!self) throw new NotFoundException('User not found');
+      return self;
+    }
+
+    throw new ForbiddenException(
+      'Only superadmins and job seekers can use user support chat',
+    );
+  }
+
+  private async findUserSupportConversationEntity(userId: string) {
+    return this.conversationRepo.findOne({
+      where: {
+        type: 'user_support',
+        contactUser: { id: userId },
+      },
+      relations: [
+        'contactUser',
+        'participants',
+        'participants.user',
+      ],
+    });
+  }
+
+  private async ensureUserSupportConversation(userId: string): Promise<Conversation> {
+    const existing = await this.findUserSupportConversationEntity(userId);
+    if (existing) return this.syncAllSuperadminParticipants(existing);
+
+    const targetUser = await this.userRepo.findOneBy({ id: userId });
+    if (!targetUser) throw new NotFoundException('User not found');
+
+    const superadmins = await this.userRepo.find({
+      where: { role: 'superadmin' },
+    });
+
+    let conversation = this.conversationRepo.create({
+      type: 'user_support',
+      application: null,
+      company: null,
+      contactUser: targetUser,
+      lastMessageAt: null,
+    });
+    conversation = await this.conversationRepo.save(conversation);
+
+    const participantRows: ConversationParticipant[] = [
+      this.participantRepo.create({
+        conversation,
+        user: targetUser,
+        lastReadAt: null,
+      }),
+    ];
+
+    for (const sa of superadmins) {
+      participantRows.push(
+        this.participantRepo.create({
+          conversation,
+          user: sa,
+          lastReadAt: null,
+        }),
+      );
+    }
+
+    await this.participantRepo.save(participantRows);
+
+    const loaded = await this.findUserSupportConversationEntity(userId);
+    if (!loaded) {
+      throw new NotFoundException('Failed to create user support conversation');
+    }
+    return loaded;
+  }
+
   private async getOrCreateSupportConversation(
     companyId: string | undefined,
     user: AuthUser,
@@ -723,6 +869,13 @@ export class ChatService {
       return reloaded ?? conversation;
     }
 
+    if (conversation.type === 'user_support' && conversation.contactUser?.id) {
+      const reloaded = await this.findUserSupportConversationEntity(
+        conversation.contactUser.id,
+      );
+      return reloaded ?? conversation;
+    }
+
     const reloaded = await this.conversationRepo.findOne({
       where: { id: conversation.id },
       relations: [
@@ -759,7 +912,8 @@ export class ChatService {
       if (
         conversation &&
         (conversation.type === 'company_support' ||
-          conversation.type === 'platform_contact')
+          conversation.type === 'platform_contact' ||
+          conversation.type === 'user_support')
       ) {
         const synced = await this.ensureSuperadminParticipant(
           conversation,
@@ -814,11 +968,15 @@ export class ChatService {
     if (conv.type === 'job_application') {
       const job = conv.application?.job;
       const applicant = conv.application?.applicant?.user;
+      const companyName = job?.company?.name ?? 'Company';
+      const applicantName = applicant?.name ?? 'Applicant';
       title = job?.title ?? 'Job application';
       if (user.role === 'user') {
-        subtitle = job?.company?.name ?? 'Company';
+        subtitle = `${companyName} · Job application`;
+      } else if (user.role === 'superadmin') {
+        subtitle = `${applicantName} · ${companyName}`;
       } else {
-        subtitle = applicant?.name ?? 'Applicant';
+        subtitle = `${applicantName} · Job application`;
       }
     } else if (conv.type === 'platform_contact') {
       if (user.role === 'superadmin') {
@@ -827,6 +985,14 @@ export class ChatService {
       } else {
         title = 'Platform support';
         subtitle = conv.subject ?? 'Contact inquiry';
+      }
+    } else if (conv.type === 'user_support') {
+      if (user.role === 'superadmin') {
+        title = conv.contactUser?.name ?? 'Job seeker';
+        subtitle = conv.contactUser?.email ?? 'User';
+      } else {
+        title = 'Platform support';
+        subtitle = 'Application Tracker team';
       }
     } else if (user.role === 'superadmin') {
       title = conv.company?.name ?? 'Company';
@@ -853,6 +1019,7 @@ export class ChatService {
       applicationId: conv.application?.id ?? null,
       jobId: conv.application?.job?.id ?? null,
       companyId: conv.company?.id ?? null,
+      userId: conv.contactUser?.id ?? null,
       participants: otherParticipants.map((u) => ({
         id: u.id,
         name: u.name,

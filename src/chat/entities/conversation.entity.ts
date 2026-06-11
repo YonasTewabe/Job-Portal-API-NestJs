@@ -17,7 +17,8 @@ import { Message } from './message.entity';
 export type ConversationType =
   | 'job_application'
   | 'company_support'
-  | 'platform_contact';
+  | 'platform_contact'
+  | 'user_support';
 
 @Entity({ name: 'conversations' })
 export class Conversation {

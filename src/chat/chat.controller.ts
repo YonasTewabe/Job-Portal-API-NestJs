@@ -71,6 +71,14 @@ export class ChatController {
     return this.chatService.findSupportConversation(companyId, user);
   }
 
+  @Get('conversations/user-support')
+  findUserSupport(
+    @Query('userId') userId: string | undefined,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.chatService.findUserSupportConversation(userId, user);
+  }
+
   @Get('conversations/:id/messages')
   getMessages(
     @Param('id') id: string,
