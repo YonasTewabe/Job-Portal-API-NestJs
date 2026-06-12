@@ -31,6 +31,7 @@ export class Application {
   @ManyToOne(() => Job, (job) => job.applications, {
     eager: true,
     nullable: false,
+    onDelete: 'CASCADE',
   })
   job: Job;
 }

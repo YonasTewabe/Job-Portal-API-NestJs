@@ -11,6 +11,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ApplicationService } from './application.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
@@ -23,19 +24,24 @@ export class ApplicationController {
   @Post()
   @Roles('user')
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() dto: CreateApplicationDto) {
-    return this.applicationService.create(dto);
+  create(
+    @CurrentUser() user: { id: string },
+    @Body() dto: CreateApplicationDto,
+  ) {
+    return this.applicationService.create(dto, user.id);
   }
 
-  /** Superadmin: all applications; company_admin: filtered by companyId; user: by applicantId */
+  /** Superadmin: all applications; company_admin: filtered by companyId; user: by applicantId or userId */
   @Get()
   findAll(
     @Query('companyId') companyId?: string,
     @Query('applicantId') applicantId?: string,
+    @Query('userId') userId?: string,
     @Query('jobId') jobId?: string,
   ) {
     if (companyId) return this.applicationService.findByCompany(companyId);
     if (applicantId) return this.applicationService.findByApplicant(applicantId);
+    if (userId) return this.applicationService.findByUser(userId);
     if (jobId) return this.applicationService.findByJob(jobId);
     return this.applicationService.findAll();
   }

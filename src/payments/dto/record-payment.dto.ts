@@ -1,4 +1,12 @@
-import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+import { RecordPaymentJobDto } from './record-payment-job.dto';
 
 export class RecordPaymentDto {
   @IsString()
@@ -24,4 +32,10 @@ export class RecordPaymentDto {
   @IsOptional()
   @IsString()
   payerPhone?: string;
+
+  /** When provided, a draft job is created and linked to this payment */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => RecordPaymentJobDto)
+  job?: RecordPaymentJobDto;
 }

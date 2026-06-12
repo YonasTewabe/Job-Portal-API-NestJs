@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { Application } from './entities/application.entity';
 import { Applicant } from '../applicant/entities/applicant.entity';
 import { Job } from '../jobs/entities/job.entity';
@@ -27,12 +27,15 @@ export class ApplicationService {
     private readonly chatService: ChatService,
   ) {}
 
-  async create(dto: CreateApplicationDto): Promise<Application> {
+  async create(dto: CreateApplicationDto, userId?: string): Promise<Application> {
     const applicant = await this.applicantRepo.findOne({
       where: { id: dto.applicantId },
       relations: ['user'],
     });
     if (!applicant) throw new NotFoundException('Applicant not found');
+    if (userId && applicant.user?.id !== userId) {
+      throw new BadRequestException('Profile does not belong to this account');
+    }
     if (!applicant.profileCompleted) {
       throw new BadRequestException(
         'Complete your profile before applying for jobs',
@@ -44,6 +47,9 @@ export class ApplicationService {
       relations: ['company', 'company.admin'],
     });
     if (!job) throw new NotFoundException('Job not found');
+    if (job.status === 'draft') {
+      throw new BadRequestException('This job is not published yet');
+    }
     if (job.isOpen === false) {
       throw new BadRequestException('This job is no longer accepting applications');
     }
@@ -52,7 +58,11 @@ export class ApplicationService {
     }
 
     const existing = await this.applicationRepo.findOne({
-      where: { applicant: { id: dto.applicantId }, job: { id: dto.jobId } },
+      where: {
+        job: { id: dto.jobId },
+        applicant: { user: { id: applicant.user.id } },
+      },
+      relations: ['applicant', 'applicant.user'],
     });
     if (existing) throw new ConflictException('Already applied to this job');
 
@@ -68,7 +78,7 @@ export class ApplicationService {
     if (adminId) {
       await this.notificationsService.notifyApplicationReceived({
         adminUserId: adminId,
-        applicantName: applicant.user?.name ?? 'An applicant',
+        applicantName: applicant.fullname ?? applicant.user?.name ?? 'An applicant',
         jobTitle: job.title,
         jobId: job.id,
         applicationId: saved.id,
@@ -85,7 +95,15 @@ export class ApplicationService {
   async findByApplicant(applicantId: string): Promise<Application[]> {
     return this.applicationRepo.find({
       where: { applicant: { id: applicantId } },
-      relations: ['job', 'job.company'],
+      relations: ['job', 'job.company', 'applicant'],
+    });
+  }
+
+  async findByUser(userId: string): Promise<Application[]> {
+    return this.applicationRepo.find({
+      where: { applicant: { user: { id: userId } } },
+      relations: ['job', 'job.company', 'applicant'],
+      order: { applicationDate: 'DESC' },
     });
   }
 
@@ -230,7 +248,29 @@ export class ApplicationService {
 
   async remove(id: string): Promise<void> {
     const app = await this.findOne(id);
+    await this.chatService.deleteConversationsForApplications([app.id]);
     await this.applicationRepo.remove(app);
+  }
+
+  /** Delete all applications for a job and their related conversations */
+  async deleteByJobId(jobId: string, manager?: EntityManager): Promise<void> {
+    const applicationRepo = manager
+      ? manager.getRepository(Application)
+      : this.applicationRepo;
+
+    const applications = await applicationRepo.find({
+      where: { job: { id: jobId } },
+      select: { id: true },
+    });
+
+    if (!applications.length) return;
+
+    const applicationIds = applications.map((a) => a.id);
+    await this.chatService.deleteConversationsForApplications(
+      applicationIds,
+      manager,
+    );
+    await applicationRepo.delete({ job: { id: jobId } });
   }
 
   private assertInterviewNotInPast(

@@ -7,6 +7,7 @@ import { ChapaModule } from '../chapa/chapa.module';
 import { CompanyModule } from '../company/company.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { UsersModule } from '../users/users.module';
+import { JobsModule } from '../jobs/jobs.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { UsersModule } from '../users/users.module';
     CompanyModule,
     NotificationsModule,
     UsersModule,
+    JobsModule,
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService],

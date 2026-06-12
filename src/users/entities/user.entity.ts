@@ -24,8 +24,8 @@ export class User {
   role: UserRole;
 
   /** Populated only for users with role = 'user' */
-  @OneToOne(() => Applicant, (applicant) => applicant.user, { nullable: true, cascade: true })
-  applicant?: Applicant;
+  @OneToMany(() => Applicant, (applicant) => applicant.user, { cascade: true })
+  applicants?: Applicant[];
 
   /** Populated only for users with role = 'company_admin' */
   @OneToOne(() => Company, (company) => company.admin, { nullable: true })

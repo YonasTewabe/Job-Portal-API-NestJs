@@ -1,9 +1,8 @@
 import {
   Column,
   Entity,
-  JoinColumn,
+  ManyToOne,
   OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
@@ -28,6 +27,15 @@ export class Applicant {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  profileName: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  fullname: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  email: string;
+
   @Column({ type: 'date', nullable: true })
   dateOfBirth: Date;
 
@@ -49,8 +57,7 @@ export class Applicant {
   @Column({ type: 'boolean', default: false })
   profileCompleted: boolean;
 
-  @OneToOne(() => User, (user) => user.applicant)
-  @JoinColumn()
+  @ManyToOne(() => User, (user) => user.applicants, { nullable: false })
   user: User;
 
   @OneToMany(() => Application, (application) => application.applicant)

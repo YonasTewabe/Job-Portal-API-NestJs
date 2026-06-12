@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -7,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Applicant } from './entities/applicant.entity';
 import { UpdateApplicantDto } from './dto/update-applicant.dto';
+import { CreateApplicantProfileDto } from './dto/create-applicant-profile.dto';
 import { User } from '../users/entities/user.entity';
 
 @Injectable()
@@ -43,6 +45,7 @@ export class ApplicantService {
     const dateOfBirth = this.formatDateOfBirth(applicant.dateOfBirth);
     return {
       id: applicant.id,
+      profileName: applicant.profileName ?? 'Default Profile',
       dateOfBirth,
       age: this.calculateAge(applicant.dateOfBirth),
       sex: applicant.sex,
@@ -52,9 +55,9 @@ export class ApplicantService {
       cv: applicant.cv,
       profileCompleted: applicant.profileCompleted,
       user: applicant.user,
-      fullname: applicant.user?.name ?? '',
+      fullname: applicant.fullname ?? applicant.user?.name ?? '',
       userPhone: applicant.phone ?? '',
-      email: applicant.user?.email ?? '',
+      email: applicant.email ?? applicant.user?.email ?? '',
     };
   }
 
@@ -62,28 +65,105 @@ export class ApplicantService {
     return Boolean(entry.startDate?.trim());
   }
 
-  /** Get or auto-create the applicant profile for a user */
-  async getOrCreate(userId: string) {
-    const user = await this.userRepo.findOne({
-      where: { id: userId },
-      relations: ['applicant', 'applicant.user'],
-    });
+  private async getUserOrThrow(userId: string) {
+    const user = await this.userRepo.findOneBy({ id: userId });
     if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
 
-    if (user.applicant) {
-      if (!user.applicant.user) user.applicant.user = user;
-      return this.toProfile(user.applicant);
-    }
+  private async findOwnedProfile(userId: string, profileId: string) {
+    const applicant = await this.applicantRepo.findOne({
+      where: { id: profileId, user: { id: userId } },
+      relations: ['user'],
+    });
+    if (!applicant) throw new NotFoundException('Profile not found');
+    return applicant;
+  }
 
-    const applicant = this.applicantRepo.create({
+  private defaultProfileName(count: number) {
+    return count === 0 ? 'Default Profile' : `Profile ${count + 1}`;
+  }
+
+  private createBlankApplicant(user: User, profileName: string) {
+    return this.applicantRepo.create({
       user,
+      profileName,
+      fullname: user.name ?? '',
+      email: user.email ?? '',
       profileCompleted: false,
       educations: [],
       experiences: [],
     });
-    const saved = await this.applicantRepo.save(applicant);
-    saved.user = user;
-    return this.toProfile(saved);
+  }
+
+  /** List all applicant profiles for a user */
+  async listByUser(userId: string) {
+    const applicants = await this.applicantRepo.find({
+      where: { user: { id: userId } },
+      relations: ['user'],
+      order: { profileName: 'ASC' },
+    });
+    return applicants.map((a) => this.toProfile(a));
+  }
+
+  /** Get or auto-create the default applicant profile for a user */
+  async getOrCreate(userId: string) {
+    const applicants = await this.applicantRepo.find({
+      where: { user: { id: userId } },
+      relations: ['user'],
+      order: { profileName: 'ASC' },
+      take: 1,
+    });
+
+    if (applicants.length > 0) {
+      const applicant = applicants[0];
+      if (!applicant.user) {
+        applicant.user = await this.getUserOrThrow(userId);
+      }
+      await this.backfillProfileFields(applicant);
+      return this.toProfile(applicant);
+    }
+
+    const user = await this.getUserOrThrow(userId);
+    const applicant = await this.applicantRepo.save(
+      this.createBlankApplicant(user, this.defaultProfileName(0)),
+    );
+    applicant.user = user;
+    return this.toProfile(applicant);
+  }
+
+  private async backfillProfileFields(applicant: Applicant) {
+    let changed = false;
+    if (!applicant.fullname && applicant.user?.name) {
+      applicant.fullname = applicant.user.name;
+      changed = true;
+    }
+    if (!applicant.email && applicant.user?.email) {
+      applicant.email = applicant.user.email;
+      changed = true;
+    }
+    if (!applicant.profileName) {
+      applicant.profileName = this.defaultProfileName(0);
+      changed = true;
+    }
+    if (changed) {
+      await this.applicantRepo.save(applicant);
+    }
+  }
+
+  async createProfile(userId: string, dto: CreateApplicantProfileDto = {}) {
+    const user = await this.getUserOrThrow(userId);
+    const count = await this.applicantRepo.count({
+      where: { user: { id: userId } },
+    });
+    const profileName =
+      dto.profileName?.trim() || this.defaultProfileName(count);
+
+    const applicant = await this.applicantRepo.save(
+      this.createBlankApplicant(user, profileName),
+    );
+    applicant.user = user;
+    return this.toProfile(applicant);
   }
 
   async findAll() {
@@ -101,47 +181,41 @@ export class ApplicantService {
   }
 
   async findByUser(userId: string) {
-    const applicant = await this.applicantRepo.findOne({
-      where: { user: { id: userId } },
-      relations: ['user'],
-    });
-    if (!applicant) throw new NotFoundException('Applicant profile not found');
+    return this.getOrCreate(userId);
+  }
+
+  async findProfileByUser(userId: string, profileId: string) {
+    const applicant = await this.findOwnedProfile(userId, profileId);
     return this.toProfile(applicant);
   }
 
-  async update(userId: string, dto: UpdateApplicantDto) {
-    let applicant = await this.applicantRepo.findOne({
+  private async getDefaultProfile(userId: string) {
+    const profiles = await this.applicantRepo.find({
       where: { user: { id: userId } },
       relations: ['user'],
+      order: { profileName: 'ASC' },
+      take: 1,
     });
+    if (profiles[0]) return profiles[0];
 
-    if (!applicant) {
-      const user = await this.userRepo.findOneBy({ id: userId });
-      if (!user) throw new NotFoundException('User not found');
-      applicant = this.applicantRepo.create({
-        user,
-        profileCompleted: false,
-        educations: [],
-        experiences: [],
-      });
-      applicant = await this.applicantRepo.save(applicant);
-      applicant.user = user;
+    const user = await this.getUserOrThrow(userId);
+    return this.applicantRepo.save(
+      this.createBlankApplicant(user, this.defaultProfileName(0)),
+    );
+  }
+
+  async update(userId: string, dto: UpdateApplicantDto, profileId?: string) {
+    const applicant = profileId
+      ? await this.findOwnedProfile(userId, profileId)
+      : await this.getDefaultProfile(userId);
+
+    if (!applicant.user) {
+      applicant.user = await this.getUserOrThrow(userId);
     }
 
-    if (dto.fullname && applicant.user) {
-      applicant.user.name = dto.fullname;
-      await this.userRepo.save(applicant.user);
-    }
-
-    if (dto.email && applicant.user) {
-      const existing = await this.userRepo.findOneBy({ email: dto.email });
-      if (existing && existing.id !== applicant.user.id) {
-        throw new ConflictException('Email already in use');
-      }
-      applicant.user.email = dto.email;
-      await this.userRepo.save(applicant.user);
-    }
-
+    if (dto.profileName?.trim()) applicant.profileName = dto.profileName.trim();
+    if (dto.fullname !== undefined) applicant.fullname = dto.fullname;
+    if (dto.email !== undefined) applicant.email = dto.email;
     if (dto.userPhone !== undefined) applicant.phone = dto.userPhone;
     if (dto.educations) applicant.educations = dto.educations;
     if (dto.experiences) applicant.experiences = dto.experiences;
@@ -163,19 +237,50 @@ export class ApplicantService {
         (e) => e.title?.trim() && e.company?.trim() && this.entryHasDates(e),
       );
 
-    if (
-      applicant.dateOfBirth &&
-      applicant.sex &&
-      hasEducations &&
-      hasExperiences &&
-      applicant.phone &&
-      applicant.cv
-    ) {
-      applicant.profileCompleted = true;
-    }
+    applicant.profileCompleted = Boolean(
+      applicant.fullname?.trim() &&
+        applicant.email?.trim() &&
+        applicant.dateOfBirth &&
+        applicant.sex &&
+        hasEducations &&
+        hasExperiences &&
+        applicant.phone &&
+        applicant.cv,
+    );
 
     const saved = await this.applicantRepo.save(applicant);
+
+    const profileCount = await this.applicantRepo.count({
+      where: { user: { id: userId } },
+    });
+    if (profileCount === 1 && dto.fullname?.trim() && applicant.user) {
+      applicant.user.name = dto.fullname.trim();
+      await this.userRepo.save(applicant.user);
+    }
+
     saved.user = applicant.user;
     return this.toProfile(saved);
+  }
+
+  async deleteProfile(userId: string, profileId: string) {
+    const profiles = await this.applicantRepo.find({
+      where: { user: { id: userId } },
+      relations: ['applications'],
+    });
+
+    if (profiles.length <= 1) {
+      throw new BadRequestException('You must keep at least one profile');
+    }
+
+    const target = profiles.find((p) => p.id === profileId);
+    if (!target) throw new NotFoundException('Profile not found');
+
+    if (target.applications?.length) {
+      throw new ConflictException(
+        'Cannot delete a profile that has job applications',
+      );
+    }
+
+    await this.applicantRepo.remove(target);
   }
 }

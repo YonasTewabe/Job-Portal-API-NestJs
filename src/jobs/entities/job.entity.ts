@@ -35,6 +35,9 @@ export class Job {
   @Column({ type: 'date' })
   deadline: Date;
 
+  @Column({ type: 'varchar', default: 'published' })
+  status: 'draft' | 'published';
+
   @Column({ default: true })
   isOpen: boolean;
 

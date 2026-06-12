@@ -11,6 +11,8 @@ import { ChapaService } from '../chapa/chapa.service';
 import { CompanyService } from '../company/company.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { UsersService } from '../users/users.service';
+import { JobsService } from '../jobs/jobs.service';
+import { RecordPaymentJobDto } from './dto/record-payment-job.dto';
 
 export interface PaymentFilters {
   companyId?: string;
@@ -27,7 +29,27 @@ export class PaymentsService {
     private readonly companyService: CompanyService,
     private readonly notificationsService: NotificationsService,
     private readonly usersService: UsersService,
+    private readonly jobsService: JobsService,
   ) {}
+
+  private async ensureDraftJob(
+    payment: JobPayment,
+    jobDto: RecordPaymentJobDto,
+    userId: string,
+  ): Promise<string | null> {
+    if (payment.jobId) return payment.jobId;
+
+    const company = await this.companyService.findByAdmin(userId);
+    const job = await this.jobsService.create({
+      ...jobDto,
+      companyId: company.id,
+      status: 'draft',
+    });
+
+    payment.jobId = job.id;
+    await this.paymentRepo.save(payment);
+    return job.id;
+  }
 
   private toResponse(payment: JobPayment) {
     return {
@@ -70,6 +92,14 @@ export class PaymentsService {
       relations: ['company'],
     });
     if (existing) {
+      if (dto.job) {
+        await this.ensureDraftJob(existing, dto.job, userId);
+        const refreshed = await this.paymentRepo.findOne({
+          where: { txRef: dto.txRef },
+          relations: ['company'],
+        });
+        if (refreshed) return this.toResponse(refreshed);
+      }
       return this.toResponse(existing);
     }
 
@@ -90,8 +120,18 @@ export class PaymentsService {
       paidBy: { id: userId } as any,
     });
 
-    const saved = await this.paymentRepo.save(payment);
+    let saved = await this.paymentRepo.save(payment);
     saved.company = company;
+
+    if (dto.job) {
+      await this.ensureDraftJob(saved, dto.job, userId);
+      const refreshed = await this.paymentRepo.findOne({
+        where: { txRef: dto.txRef },
+        relations: ['company'],
+      });
+      if (refreshed) saved = refreshed;
+      saved.company = company;
+    }
 
     const superadmins = await this.usersService.findByRole('superadmin');
     if (superadmins.length > 0) {

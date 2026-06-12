@@ -23,7 +23,7 @@ export class UsersService {
   }
 
   async findAll(): Promise<User[]> {
-    return this.userRepo.find({ relations: ['applicant', 'company'] });
+    return this.userRepo.find({ relations: ['applicants', 'company'] });
   }
 
   async findByRole(role: string): Promise<User[]> {
@@ -36,7 +36,7 @@ export class UsersService {
   async findOne(id: string): Promise<User> {
     const user = await this.userRepo.findOne({
       where: { id },
-      relations: ['applicant', 'company'],
+      relations: ['applicants', 'company'],
     });
     if (!user) throw new NotFoundException('User not found');
     return user;

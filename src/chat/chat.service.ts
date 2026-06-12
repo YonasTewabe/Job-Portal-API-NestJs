@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { Conversation } from './entities/conversation.entity';
 import { ConversationParticipant } from './entities/conversation-participant.entity';
 import { Message } from './entities/message.entity';
@@ -37,6 +37,21 @@ export class ChatService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
   ) {}
+
+  async deleteConversationsForApplications(
+    applicationIds: string[],
+    manager?: EntityManager,
+  ): Promise<void> {
+    if (!applicationIds.length) return;
+
+    const conversationRepo = manager
+      ? manager.getRepository(Conversation)
+      : this.conversationRepo;
+
+    await conversationRepo.delete({
+      application: { id: In(applicationIds) },
+    });
+  }
 
   async findConversations(user: AuthUser) {
     const conversationRelations = [

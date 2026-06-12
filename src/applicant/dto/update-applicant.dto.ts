@@ -15,6 +15,10 @@ import { ExperienceEntryDto } from './experience-entry.dto';
 export class UpdateApplicantDto {
   @IsOptional()
   @IsString()
+  profileName?: string;
+
+  @IsOptional()
+  @IsString()
   fullname?: string;
 
   @IsOptional()
