@@ -25,7 +25,9 @@ export class CompanyService {
    * Called only by superadmin.
    */
   async create(dto: CreateCompanyDto): Promise<Company> {
-    const existingUser = await this.userRepo.findOneBy({ email: dto.adminEmail });
+    const existingUser = await this.userRepo.findOneBy({
+      email: dto.adminEmail,
+    });
     if (existingUser) throw new ConflictException('Admin email already in use');
 
     const hashedPassword = await bcrypt.hash(dto.adminPassword, 12);

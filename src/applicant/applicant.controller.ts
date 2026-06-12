@@ -53,10 +53,7 @@ export class ApplicantController {
   /** Authenticated user: get a specific applicant profile */
   @Get('me/profiles/:id')
   @Roles('user')
-  getMyProfile(
-    @CurrentUser() user: { id: string },
-    @Param('id') id: string,
-  ) {
+  getMyProfile(@CurrentUser() user: { id: string }, @Param('id') id: string) {
     return this.applicantService.findProfileByUser(user.id, id);
   }
 

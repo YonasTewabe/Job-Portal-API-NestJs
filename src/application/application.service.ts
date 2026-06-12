@@ -27,7 +27,10 @@ export class ApplicationService {
     private readonly chatService: ChatService,
   ) {}
 
-  async create(dto: CreateApplicationDto, userId?: string): Promise<Application> {
+  async create(
+    dto: CreateApplicationDto,
+    userId?: string,
+  ): Promise<Application> {
     const applicant = await this.applicantRepo.findOne({
       where: { id: dto.applicantId },
       relations: ['user'],
@@ -51,7 +54,9 @@ export class ApplicationService {
       throw new BadRequestException('This job is not published yet');
     }
     if (job.isOpen === false) {
-      throw new BadRequestException('This job is no longer accepting applications');
+      throw new BadRequestException(
+        'This job is no longer accepting applications',
+      );
     }
     if (new Date(job.deadline) < new Date()) {
       throw new BadRequestException('Application deadline has passed');
@@ -78,7 +83,8 @@ export class ApplicationService {
     if (adminId) {
       await this.notificationsService.notifyApplicationReceived({
         adminUserId: adminId,
-        applicantName: applicant.fullname ?? applicant.user?.name ?? 'An applicant',
+        applicantName:
+          applicant.fullname ?? applicant.user?.name ?? 'An applicant',
         jobTitle: job.title,
         jobId: job.id,
         applicationId: saved.id,
@@ -89,7 +95,9 @@ export class ApplicationService {
   }
 
   async findAll(): Promise<Application[]> {
-    return this.applicationRepo.find({ relations: ['applicant', 'applicant.user', 'job', 'job.company'] });
+    return this.applicationRepo.find({
+      relations: ['applicant', 'applicant.user', 'job', 'job.company'],
+    });
   }
 
   async findByApplicant(applicantId: string): Promise<Application[]> {
@@ -124,7 +132,13 @@ export class ApplicationService {
   async findOne(id: string): Promise<Application> {
     const app = await this.applicationRepo.findOne({
       where: { id },
-      relations: ['applicant', 'applicant.user', 'job', 'job.company', 'job.company.admin'],
+      relations: [
+        'applicant',
+        'applicant.user',
+        'job',
+        'job.company',
+        'job.company.admin',
+      ],
     });
     if (!app) throw new NotFoundException('Application not found');
     return app;
@@ -211,7 +225,8 @@ export class ApplicationService {
       ) {
         const interviewChanged =
           (dto.interviewDate &&
-            new Date(dto.interviewDate).toISOString() !== previousInterviewDate) ||
+            new Date(dto.interviewDate).toISOString() !==
+              previousInterviewDate) ||
           (dto.interviewLocation !== undefined &&
             dto.interviewLocation !== previousInterviewLocation) ||
           (dto.interviewHasTime !== undefined &&
@@ -300,10 +315,7 @@ export class ApplicationService {
     }
   }
 
-  private formatInterviewWhen(
-    date: Date | string,
-    hasTime = true,
-  ): string {
+  private formatInterviewWhen(date: Date | string, hasTime = true): string {
     const d = new Date(date);
     if (!hasTime) {
       return d.toLocaleDateString('en-US', { dateStyle: 'medium' });

@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { PaymentsService } from './payments.service';
@@ -10,10 +18,7 @@ export class PaymentsController {
 
   @Post('record')
   @Roles('company_admin')
-  record(
-    @CurrentUser() user: { id: string },
-    @Body() dto: RecordPaymentDto,
-  ) {
+  record(@CurrentUser() user: { id: string }, @Body() dto: RecordPaymentDto) {
     return this.paymentsService.record(dto, user.id);
   }
 

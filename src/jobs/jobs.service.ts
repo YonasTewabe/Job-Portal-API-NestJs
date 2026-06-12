@@ -77,7 +77,9 @@ export class JobsService {
     return job;
   }
 
-  private isDeadlineInFuture(deadline: Date | string | null | undefined): boolean {
+  private isDeadlineInFuture(
+    deadline: Date | string | null | undefined,
+  ): boolean {
     if (!deadline) return false;
     const d = new Date(deadline);
     if (Number.isNaN(d.getTime())) return false;
@@ -98,7 +100,11 @@ export class JobsService {
     return false;
   }
 
-  async update(id: string, dto: UpdateJobDto, viewer?: JobViewer): Promise<Job> {
+  async update(
+    id: string,
+    dto: UpdateJobDto,
+    viewer?: JobViewer,
+  ): Promise<Job> {
     const job = await this.findOne(id, viewer);
 
     if (dto.companyId) {
@@ -136,7 +142,10 @@ export class JobsService {
       throw new BadRequestException('Only draft jobs can be published');
     }
 
-    if (viewer.role === 'company_admin' && job.company?.admin?.id !== viewer.id) {
+    if (
+      viewer.role === 'company_admin' &&
+      job.company?.admin?.id !== viewer.id
+    ) {
       throw new ForbiddenException('Not allowed to publish this job');
     }
 

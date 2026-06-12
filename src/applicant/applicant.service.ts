@@ -227,7 +227,8 @@ export class ApplicantService {
       Array.isArray(applicant.educations) &&
       applicant.educations.length > 0 &&
       applicant.educations.every(
-        (e) => e.degree?.trim() && e.university?.trim() && this.entryHasDates(e),
+        (e) =>
+          e.degree?.trim() && e.university?.trim() && this.entryHasDates(e),
       );
 
     const hasExperiences =

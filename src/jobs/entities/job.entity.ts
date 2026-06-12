@@ -44,7 +44,10 @@ export class Job {
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @ManyToOne(() => Company, (company) => company.jobs, { eager: true, nullable: false })
+  @ManyToOne(() => Company, (company) => company.jobs, {
+    eager: true,
+    nullable: false,
+  })
   company: Company;
 
   @OneToMany(() => Application, (application) => application.job)

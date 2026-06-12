@@ -1,4 +1,10 @@
-import { IsDateString, IsIn, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsDateString,
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 import { IsFutureDate } from '../validators/is-future-date.validator';
 
 export const JOB_STATUSES = ['draft', 'published'] as const;

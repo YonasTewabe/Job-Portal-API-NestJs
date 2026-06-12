@@ -29,6 +29,9 @@ export const cvUploadOptions = {
       cb(null, true);
       return;
     }
-    cb(new BadRequestException('Only PDF files are allowed') as unknown as Error, false);
+    cb(
+      new BadRequestException('Only PDF files are allowed') as unknown as Error,
+      false,
+    );
   },
 };

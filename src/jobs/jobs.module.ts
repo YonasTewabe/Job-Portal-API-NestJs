@@ -7,10 +7,7 @@ import { JobsController } from './jobs.controller';
 import { ApplicationModule } from '../application/application.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Job, Company]),
-    ApplicationModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Job, Company]), ApplicationModule],
   controllers: [JobsController],
   providers: [JobsService],
   exports: [JobsService],

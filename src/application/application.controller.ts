@@ -40,7 +40,8 @@ export class ApplicationController {
     @Query('jobId') jobId?: string,
   ) {
     if (companyId) return this.applicationService.findByCompany(companyId);
-    if (applicantId) return this.applicationService.findByApplicant(applicantId);
+    if (applicantId)
+      return this.applicationService.findByApplicant(applicantId);
     if (userId) return this.applicationService.findByUser(userId);
     if (jobId) return this.applicationService.findByJob(jobId);
     return this.applicationService.findAll();

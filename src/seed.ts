@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import 'reflect-metadata';
 import * as dotenv from 'dotenv';
 dotenv.config();
@@ -36,7 +37,9 @@ async function seed() {
   console.log('🗑️  Cleared existing data');
 
   // Check if superadmin already exists to avoid duplicates on re-run
-  const existing = await userRepo.findOneBy({ email: 'superadmin@jobportal.com' });
+  const existing = await userRepo.findOneBy({
+    email: 'superadmin@jobportal.com',
+  });
   if (existing) {
     console.log('👑 Superadmin already exists — skipping');
     await AppDataSource.destroy();

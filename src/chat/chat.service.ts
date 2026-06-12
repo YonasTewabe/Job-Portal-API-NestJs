@@ -98,7 +98,11 @@ export class ChatService {
     };
 
     if (user.role === 'superadmin') {
-      const adminConversationTypes = ['company_support', 'platform_contact', 'user_support'] as const;
+      const adminConversationTypes = [
+        'company_support',
+        'platform_contact',
+        'user_support',
+      ] as const;
       for (const type of adminConversationTypes) {
         const adminConversations = await this.conversationRepo.find({
           where: { type },
@@ -271,7 +275,11 @@ export class ChatService {
       user,
       lastMessage ?? null,
       participant
-        ? await this.countUnread(conversation.id, user.id, participant.lastReadAt)
+        ? await this.countUnread(
+            conversation.id,
+            user.id,
+            participant.lastReadAt,
+          )
         : 0,
     );
   }
@@ -299,12 +307,17 @@ export class ChatService {
     user: AuthUser,
   ) {
     const targetUser = await this.resolveUserSupportTarget(userId, user);
-    let conversation = await this.findUserSupportConversationEntity(targetUser.id);
+    let conversation = await this.findUserSupportConversationEntity(
+      targetUser.id,
+    );
     if (!conversation) return null;
 
     if (user.role === 'superadmin') {
       conversation = await this.syncAllSuperadminParticipants(conversation);
-      conversation = await this.ensureSuperadminParticipant(conversation, user.id);
+      conversation = await this.ensureSuperadminParticipant(
+        conversation,
+        user.id,
+      );
     }
 
     const participant = await this.participantRepo.findOne({
@@ -326,23 +339,27 @@ export class ChatService {
       user,
       lastMessage ?? null,
       participant
-        ? await this.countUnread(conversation.id, user.id, participant.lastReadAt)
+        ? await this.countUnread(
+            conversation.id,
+            user.id,
+            participant.lastReadAt,
+          )
         : 0,
     );
   }
 
   /** Returns existing company-support conversation or null (does not create). */
-  async findSupportConversation(
-    companyId: string | undefined,
-    user: AuthUser,
-  ) {
+  async findSupportConversation(companyId: string | undefined, user: AuthUser) {
     const company = await this.resolveSupportCompany(companyId, user);
     let conversation = await this.findSupportConversationEntity(company.id);
     if (!conversation) return null;
 
     if (user.role === 'superadmin') {
       conversation = await this.syncAllSuperadminParticipants(conversation);
-      conversation = await this.ensureSuperadminParticipant(conversation, user.id);
+      conversation = await this.ensureSuperadminParticipant(
+        conversation,
+        user.id,
+      );
     }
 
     const participant = await this.participantRepo.findOne({
@@ -364,7 +381,11 @@ export class ChatService {
       user,
       lastMessage ?? null,
       participant
-        ? await this.countUnread(conversation.id, user.id, participant.lastReadAt)
+        ? await this.countUnread(
+            conversation.id,
+            user.id,
+            participant.lastReadAt,
+          )
         : 0,
     );
   }
@@ -385,9 +406,7 @@ export class ChatService {
     });
 
     const fallbackSenderName =
-      conversation?.contactUser?.name ??
-      conversation?.contactName ??
-      'Guest';
+      conversation?.contactUser?.name ?? conversation?.contactName ?? 'Guest';
 
     return messages.map((m) => {
       const senderId = m.sender?.id ?? null;
@@ -405,7 +424,11 @@ export class ChatService {
     });
   }
 
-  async sendMessage(conversationId: string, dto: SendMessageDto, user: AuthUser) {
+  async sendMessage(
+    conversationId: string,
+    dto: SendMessageDto,
+    user: AuthUser,
+  ) {
     const participant = await this.resolveParticipant(conversationId, user);
 
     const conversation = await this.conversationRepo.findOne({
@@ -468,11 +491,20 @@ export class ChatService {
   async getUnreadTotal(userId: string): Promise<number> {
     const user = await this.userRepo.findOneBy({ id: userId });
     if (user?.role === 'superadmin') {
-      const adminConversationTypes = ['company_support', 'platform_contact', 'user_support'] as const;
+      const adminConversationTypes = [
+        'company_support',
+        'platform_contact',
+        'user_support',
+      ] as const;
       for (const type of adminConversationTypes) {
         const adminConversations = await this.conversationRepo.find({
           where: { type },
-          relations: ['company', 'contactUser', 'participants', 'participants.user'],
+          relations: [
+            'company',
+            'contactUser',
+            'participants',
+            'participants.user',
+          ],
         });
         for (const conv of adminConversations) {
           await this.syncAllSuperadminParticipants(conv);
@@ -493,7 +525,10 @@ export class ChatService {
     return total;
   }
 
-  private async getOrCreateJobConversation(applicationId: string, user: AuthUser) {
+  private async getOrCreateJobConversation(
+    applicationId: string,
+    user: AuthUser,
+  ) {
     if (!applicationId) {
       throw new BadRequestException('applicationId is required');
     }
@@ -509,7 +544,13 @@ export class ChatService {
   ): Promise<void> {
     const application = await this.applicationRepo.findOne({
       where: { id: applicationId },
-      relations: ['applicant', 'applicant.user', 'job', 'job.company', 'job.company.admin'],
+      relations: [
+        'applicant',
+        'applicant.user',
+        'job',
+        'job.company',
+        'job.company.admin',
+      ],
     });
     if (!application) throw new NotFoundException('Application not found');
 
@@ -544,7 +585,9 @@ export class ChatService {
     });
   }
 
-  private async ensureJobConversation(applicationId: string): Promise<Conversation> {
+  private async ensureJobConversation(
+    applicationId: string,
+  ): Promise<Conversation> {
     const existing = await this.findJobConversationEntity(applicationId);
     if (existing) return existing;
 
@@ -656,7 +699,9 @@ export class ChatService {
       const targetUser = await this.userRepo.findOneBy({ id: userId });
       if (!targetUser) throw new NotFoundException('User not found');
       if (targetUser.role !== 'user') {
-        throw new BadRequestException('Only job seeker accounts can be messaged');
+        throw new BadRequestException(
+          'Only job seeker accounts can be messaged',
+        );
       }
       return targetUser;
     }
@@ -678,15 +723,13 @@ export class ChatService {
         type: 'user_support',
         contactUser: { id: userId },
       },
-      relations: [
-        'contactUser',
-        'participants',
-        'participants.user',
-      ],
+      relations: ['contactUser', 'participants', 'participants.user'],
     });
   }
 
-  private async ensureUserSupportConversation(userId: string): Promise<Conversation> {
+  private async ensureUserSupportConversation(
+    userId: string,
+  ): Promise<Conversation> {
     const existing = await this.findUserSupportConversationEntity(userId);
     if (existing) return this.syncAllSuperadminParticipants(existing);
 
@@ -797,7 +840,9 @@ export class ChatService {
     });
   }
 
-  private async ensureSupportConversation(companyId: string): Promise<Conversation> {
+  private async ensureSupportConversation(
+    companyId: string,
+  ): Promise<Conversation> {
     const existing = await this.findSupportConversationEntity(companyId);
     if (existing) return this.syncAllSuperadminParticipants(existing);
 
@@ -1020,9 +1065,9 @@ export class ChatService {
     const sender = lastMessage?.sender;
     const senderIsObject = sender && typeof sender === 'object';
     const lastSenderName = senderIsObject
-      ? (sender.name ?? '')
+      ? sender.name ?? ''
       : conv.type === 'platform_contact'
-        ? (conv.contactUser?.name ?? conv.contactName ?? 'Guest')
+        ? conv.contactUser?.name ?? conv.contactName ?? 'Guest'
         : '';
 
     return {

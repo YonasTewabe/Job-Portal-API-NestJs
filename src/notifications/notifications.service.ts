@@ -114,7 +114,9 @@ export class NotificationsService {
       recipientId: params.applicantUserId,
       type: 'application_status',
       title: 'Application update',
-      message: statusMessages[params.status] ?? `Your application for "${params.jobTitle}" was updated to ${params.status}.`,
+      message:
+        statusMessages[params.status] ??
+        `Your application for "${params.jobTitle}" was updated to ${params.status}.`,
       linkPath: '/status',
       referenceId: params.applicationId,
     });

@@ -48,7 +48,7 @@ export class AuthController {
 
     return {
       message: 'Login successful',
-      jwt,           // also returned in body so frontend can store it
+      jwt, // also returned in body so frontend can store it
       userId: user.id,
       name: user.name,
       email: user.email,

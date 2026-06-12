@@ -22,10 +22,7 @@ export class NotificationsController {
   }
 
   @Patch(':id/read')
-  markRead(
-    @Param('id') id: string,
-    @CurrentUser() user: { id: string },
-  ) {
+  markRead(@Param('id') id: string, @CurrentUser() user: { id: string }) {
     return this.notificationsService.markAsRead(id, user.id);
   }
 }
