@@ -18,6 +18,9 @@ const AppDataSource = new DataSource({
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+  ssl: {
+    rejectUnauthorized: false,
+  },
   synchronize: true,
   entities: [User, Company, Applicant, Job, Application],
 });
