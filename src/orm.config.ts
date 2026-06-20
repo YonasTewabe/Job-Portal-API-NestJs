@@ -8,6 +8,9 @@ export const ormConfig = (cfg: AppConfigService): TypeOrmModuleOptions => ({
   username: cfg.dbUsername,
   password: cfg.dbPassword,
   database: cfg.dbName,
+  ssl: {
+    rejectUnauthorized: false,
+  },
   synchronize: true,
   entities: ['dist/**/*.entity{.ts,.js}'],
 });
