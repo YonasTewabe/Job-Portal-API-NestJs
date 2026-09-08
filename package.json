@@ -23,31 +23,31 @@
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^1.11.2",
-    "@nestjs/common": "^10.0.0",
+    "@nestjs/common": "^10.4.22",
     "@nestjs/config": "^3.2.2",
-    "@nestjs/core": "^10.0.0",
+    "@nestjs/core": "^10.4.22",
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/mapped-types": "*",
-    "@nestjs/platform-express": "^10.3.7",
+    "@nestjs/platform-express": "^10.4.22",
     "@nestjs/swagger": "^7.4.0",
     "@nestjs/typeorm": "^10.0.2",
-    "@vercel/postgres": "^0.8.0",
+    "@vercel/postgres": "^0.10.0",
     "axios": "^1.17.0",
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.4",
     "cookie-parser": "^1.4.6",
     "crypto-js": "^4.2.0",
-    "express": "^4.19.2",
+    "express": "^4.22.2",
     "fs": "^0.0.1-security",
-    "multer": "^1.4.5-lts.1",
-    "nodemailer": "^6.9.13",
+    "multer": "^2.3.0",
+    "nodemailer": "^10.0.1",
     "passport-jwt": "^4.0.1",
     "pg": "^8.11.5",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.20",
-    "uuid": "^9.0.1"
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
@@ -76,6 +76,46 @@
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.1.3"
+  },
+  "overrides": {
+    "ws": "^8.17.1",
+    "braces": "^3.0.3",
+    "cross-spawn": "^6.0.6",
+    "body-parser": "^1.20.3",
+    "cookie": "^0.7.0",
+    "send": "^0.19.0",
+    "serve-static": "^1.16.0",
+    "path-to-regexp": "^3.3.0",
+    "tar": "^7.5.21",
+    "tmp": "^0.2.4",
+    "minimatch": "^9.0.5",
+    "brace-expansion": "^2.0.2",
+    "form-data": "^4.0.4",
+    "@babel/runtime": "^7.26.10",
+    "pug": "^3.0.3",
+    "pug-code-gen": "^3.0.3",
+    "webpack": "^5.94.0",
+    "qs": "^6.13.0",
+    "picomatch": "^4.0.2",
+    "glob": "^10.4.5",
+    "js-yaml": "^4.1.0",
+    "lodash": "^4.17.21",
+    "ajv": "^8.17.1",
+    "html-minifier": "npm:html-minifier-terser@^7.2.0",
+    "file-type": "^22.0.0",
+    "@nestjs/platform-express": {
+      "multer": "2.3.0"
+    },
+    "@nestjs-modules/mailer": {
+      "nodemailer": "^10.0.1"
+    },
+    "preview-email": {
+      "nodemailer": "^10.0.1",
+      "uuid": "^11.1.0"
+    },
+    "@nestjs/typeorm": {
+      "uuid": "^11.1.0"
+    }
   },
   "jest": {
     "moduleFileExtensions": [
